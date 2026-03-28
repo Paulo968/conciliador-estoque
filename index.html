@@ -14,6 +14,10 @@
     </script>
     <!-- 1. Carrega a Biblioteca Primeiro -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 🟢 CORREÇÃO: Biblioteca XLSX (SheetJS) que estava faltando -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
     <!-- 2. Ativa o Modo Escuro Manualmente -->
     <script>
         tailwind.config = { darkMode: 'class' };
@@ -70,12 +74,10 @@
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
 
-    <!-- Input escondido para importar backup JSON -->
     <input type="file" id="fileImportBackup" accept=".json" class="hidden" onchange="processarImportacaoBackup(event)">
 
     <div class="max-w-[1500px] mx-auto space-y-6 p-2 md:p-6">
         
-        <!-- Header SaaS -->
         <header class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 flex flex-col md:flex-row justify-between items-center gap-4 transition-colors duration-300">
             <div class="flex items-center gap-4">
                 <div class="bg-indigo-600 dark:bg-indigo-500 p-2.5 rounded-xl text-white shadow-lg shadow-indigo-500/30">
@@ -102,10 +104,8 @@
             </div>
         </header>
 
-        <!-- Controles Principais -->
         <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 transition-colors duration-300">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <!-- Upload A -->
                 <div>
                     <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                         <span class="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span> Estoque A (Sistema 1)
@@ -114,7 +114,6 @@
                         <input type="file" id="fileA" accept=".xlsx, .xls, .csv" class="w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 dark:file:bg-emerald-500/10 file:text-emerald-700 dark:file:text-emerald-400 hover:file:bg-emerald-100 dark:hover:file:bg-emerald-500/20 cursor-pointer outline-none transition-colors duration-300"/>
                     </div>
                 </div>
-                <!-- Upload B -->
                 <div>
                     <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                         <span class="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]"></span> Estoque B (Sistema 2)
@@ -126,7 +125,7 @@
             </div>
 
             <div class="flex flex-col sm:flex-row gap-3">
-                <button onclick="iniciarCruzamento()" class="flex-1 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white font-semibold py-3.5 px-6 rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-2">
+                <button id="btnProcessar" onclick="iniciarCruzamento()" class="flex-1 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white font-semibold py-3.5 px-6 rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-2">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                     Processar Auditoria
                 </button>
@@ -137,9 +136,7 @@
             </div>
         </div>
 
-        <!-- Tabela & Filtros -->
         <div id="areaTabela" class="hidden">
-            <!-- Dashboard de KPIs Interativo (Filtros) -->
             <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
                 <div id="card-all" onclick="aplicarFiltro('all')" class="card-kpi ring-2 ring-indigo-500 dark:ring-indigo-400 scale-105 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex flex-col justify-center transition-colors duration-300">
                     <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total</span>
@@ -195,7 +192,6 @@
         </div>
     </div>
 
-    <!-- 🟢 TOAST FLUTUANTE DE CORRELAÇÃO -->
     <div id="barraCorrelação" class="fixed top-6 left-1/2 transform -translate-x-1/2 -translate-y-24 opacity-0 bg-slate-900 dark:bg-indigo-900 text-white px-6 py-4 rounded-xl shadow-2xl transition-all duration-300 z-50 flex items-center gap-4 border border-slate-700 dark:border-indigo-700 pointer-events-none">
         <div class="bg-indigo-500/20 p-2 rounded-full">
             <svg class="w-6 h-6 text-indigo-400 dark:text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
@@ -209,7 +205,6 @@
         </button>
     </div>
 
-    <!-- 🟢 TOAST DE NOTIFICAÇÃO DA IA HEURÍSTICA -->
     <div id="toastNotificacao" class="fixed top-6 right-6 transform translate-x-full opacity-0 bg-slate-900 dark:bg-indigo-900 text-white px-6 py-4 rounded-xl shadow-2xl transition-all duration-500 z-50 flex items-center gap-3 border border-slate-700 dark:border-indigo-700">
         <span class="text-2xl">🤖</span>
         <div>
@@ -218,10 +213,8 @@
         </div>
     </div>
 
-    <!-- Modal do Manual de Uso Embutido -->
     <div id="manualModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 transition-opacity">
         <div class="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl shadow-xl max-w-4xl w-full flex flex-col h-[90vh] border border-slate-100 dark:border-slate-800 transition-colors duration-300">
-            
             <div class="flex justify-between items-center mb-4 border-b border-slate-200 dark:border-slate-800 pb-4">
                 <h3 class="text-xl md:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2 transition-colors">
                     <svg class="w-6 h-6 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
@@ -231,97 +224,31 @@
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </div>
-            
-            <!-- CONTEÚDO DO MANUAL 100% EXPLICATIVO -->
             <div class="overflow-y-auto flex-1 pr-2 space-y-6 text-slate-700 dark:text-slate-300 text-sm md:text-base leading-relaxed transition-colors">
-                <p>Bem-vindo ao <strong>Conciliador de Estoque PRO</strong>. Este sistema foi desenhado para auditar, limpar e cruzar dados de duas fontes de stock diferentes de forma instantânea, rodando 100% no seu navegador com máxima segurança.</p>
-
-                <section>
-                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2 transition-colors">1. 📝 Preparação de Ficheiros e IA de Leitura</h4>
-                    <ul class="list-disc pl-6 space-y-2">
-                        <li><strong>Formatos Aceites:</strong> O sistema aceita exportações padrão de qualquer ERP em <code>.xlsx</code>, <code>.xls</code> ou <code>.csv</code>.</li>
-                        <li><strong>Com Cabeçalho:</strong> O sistema procura palavras-chave na primeira linha (ex: <em>Desc, Prod, Qtd, Saldo, Cod</em>).</li>
-                        <li><strong>Motor Heurístico (Sem Cabeçalho):</strong> Se a sua folha de cálculo não tiver títulos, não há problema! A Inteligência Artificial analisa matematicamente o padrão das primeiras 30 linhas:
-                            <ul class="list-none pl-4 mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-400 border-l-2 border-slate-200 dark:border-slate-700">
-                                <li class="pl-2">🔹 <strong>Quantidade:</strong> Identificada por números decimais (ex: 573.00).</li>
-                                <li class="pl-2">🔹 <strong>Descrição:</strong> Identificada por textos longos com espaços.</li>
-                                <li class="pl-2">🔹 <strong>Código:</strong> Identificado por zeros à esquerda ou alfanuméricos sem espaço.</li>
-                            </ul>
-                        </li>
-                    </ul>
-                </section>
-
-                <section>
-                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2 transition-colors">2. 📊 Dashboard Interativo (Filtros Inteligentes)</h4>
-                    <p class="mb-2">Os cinco cartões no topo da tabela não mostram apenas o resumo, são <strong>filtros dinâmicos</strong>. Clique num cartão para isolar imediatamente os dados na tabela:</p>
-                    <ul class="list-disc pl-6 space-y-1">
-                        <li><strong class="text-emerald-600 dark:text-emerald-400">🟢 Bateu (OK):</strong> Produtos existentes nos dois lados com quantidade exata.</li>
-                        <li><strong class="text-amber-600 dark:text-amber-400">🟠 Divergências:</strong> Produtos existentes nos dois lados, mas com diferença na quantidade (Sobra/Falta).</li>
-                        <li><strong class="text-rose-600 dark:text-rose-400">🔴 Só no A / Só no B:</strong> Produtos isolados (furos de stock, notas não lançadas, erros de registo).</li>
-                    </ul>
-                </section>
-
-                <section>
-                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2 transition-colors">3. 🛠️ Ações Manuais e Rastreabilidade</h4>
-                    <p class="mb-3">Se os produtos tiverem nomes muito diferentes, pode uni-los manualmente. O sistema preserva a <strong>Rastreabilidade</strong>: o código do produto aparece sempre em cima do nome em azul. Se unir dois produtos do mesmo lado, os códigos somam-se separados por uma barra (ex: <code class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-1 rounded">101 / 105</code>).</p>
-                    <ul class="space-y-4">
-                        <li class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700">
-                            <strong class="flex items-center gap-2 mb-1"><svg class="w-4 h-4 text-indigo-500"><use href="#icon-link"></use></svg> Botão Correlacionar (Unir):</strong> 
-                            Clique no link do 1º produto. Uma barra roxa descerá no topo da ecrã. Depois, clique no link do 2º produto. Eles fundem-se, as quantidades somam-se e a regra fica guardada.
-                        </li>
-                        <li class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700">
-                            <strong class="flex items-center gap-2 mb-1"><svg class="w-4 h-4 text-rose-500"><use href="#icon-trash"></use></svg> Botão Excluir:</strong> 
-                            Remove lixo operacional apenas daquele lado. O item desaparece da tabela, mas o sistema guarda a exclusão na memória.
-                        </li>
-                    </ul>
-                </section>
-
-                <section>
-                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2 transition-colors">4. ✨ Assistente de IA em Lote</h4>
-                    <p>Um botão amarelo chamado <strong>"Buscar Similares via IA"</strong> aparecerá após o processamento. Ele varre a tabela à procura de produtos com 60% a 87% de semelhança (ex: <em>Adubo NPK</em> vs <em>Adubo N.P.K Especial</em>). Basta aprovar os pares e aplicar de uma só vez para poupar horas de trabalho.</p>
-                </section>
-
-                <section>
-                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2 transition-colors">5. 🧠 Memória, Desfazer e Backup</h4>
-                    <p class="mb-2">A ferramenta utiliza edição não-destrutiva. O seu ficheiro original está sempre seguro.</p>
-                    <ul class="list-disc pl-6 space-y-2">
-                        <li><strong>Desfazer Erros:</strong> Clicou errado? Vá a <em>Memória de Regras</em> no topo da ecrã. Pode desfazer qualquer correlação ou restaurar itens excluídos a qualquer momento.</li>
-                        <li><strong>Exportar Backup (.json):</strong> Para não perder a inteligência e as regras que criou, clique em exportar. No dia seguinte, ou noutro computador da AP Agrícola, basta importar este ficheiro e o sistema lembrará de todas as regras que já lhe ensinou!</li>
-                    </ul>
-                </section>
+                <p>Bem-vindo ao <strong>Conciliador de Estoque PRO</strong>. Este sistema audita, limpa e cruza dados de duas fontes de stock diferentes de forma instantânea.</p>
+                <section><h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2">1. Preparação</h4><p>Aceitamos <code>.xlsx</code>, <code>.xls</code> ou <code>.csv</code>. Sem cabeçalhos? A nossa IA heurística fará a leitura matemática dos dados automaticamente.</p></section>
+                <section><h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2">2. Filtros e Dashboard</h4><p>Os cinco cartões no topo funcionam como filtros interativos. Clique neles para isolar dados na tabela.</p></section>
             </div>
-            
             <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end transition-colors">
                 <button onclick="fecharManual()" class="bg-indigo-600 text-white px-8 py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition shadow">Entendi, fechar!</button>
             </div>
         </div>
     </div>
 
-    <!-- Modais de Regras e Backup de Documento -->
     <div id="regrasModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
         <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-xl max-w-4xl w-full flex flex-col h-[85vh] border border-slate-100 dark:border-slate-800 transition-colors duration-300">
-            
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                <div>
-                    <h3 class="text-xl font-bold text-slate-900 dark:text-white transition-colors">Memória de Aprendizado</h3>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 transition-colors">Gerencie regras ou faça Backup do documento para usar em outro PC/GitHub.</p>
-                </div>
+                <div><h3 class="text-xl font-bold text-slate-900 dark:text-white transition-colors">Memória de Aprendizado</h3></div>
                 <div class="flex gap-2">
-                    <button onclick="exportarBackup()" class="text-xs bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 px-3 py-2 rounded-lg font-semibold transition border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
-                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg> Exportar Backup
-                    </button>
-                    <button onclick="document.getElementById('fileImportBackup').click()" class="text-xs bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 px-3 py-2 rounded-lg font-semibold transition border border-blue-200 dark:border-blue-800 flex items-center gap-1">
-                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg> Importar Backup
-                    </button>
-                    <button onclick="limparTodaMemoria()" class="text-xs bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 px-3 py-2 rounded-lg font-semibold transition border border-red-200 dark:border-red-800">Zerar</button>
+                    <button onclick="exportarBackup()" class="text-xs bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 px-3 py-2 rounded-lg font-semibold border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">Exportar Backup</button>
+                    <button onclick="document.getElementById('fileImportBackup').click()" class="text-xs bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 px-3 py-2 rounded-lg font-semibold border border-blue-200 dark:border-blue-800 flex items-center gap-1">Importar Backup</button>
+                    <button onclick="limparTodaMemoria()" class="text-xs bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 px-3 py-2 rounded-lg font-semibold border border-red-200 dark:border-red-800">Zerar</button>
                 </div>
             </div>
-
             <div class="flex gap-2 mb-4 border-b border-slate-200 dark:border-slate-700 pb-2 transition-colors">
                 <button onclick="mudarAba('mesclas')" id="abaMesclas" class="px-4 py-2 text-sm font-semibold rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 transition-colors">Correlações</button>
                 <button onclick="mudarAba('exclusoes')" id="abaExclusoes" class="px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Exclusões</button>
             </div>
-            
             <div id="conteudoMesclas" class="overflow-y-auto flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 transition-colors">
                 <table class="w-full text-sm text-left"><tbody id="tbodyRegras" class="divide-y divide-slate-100 dark:divide-slate-700 transition-colors"></tbody></table>
             </div>
@@ -335,11 +262,9 @@
         </div>
     </div>
 
-    <!-- Modal IA Lote -->
     <div id="aiModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 transition-opacity">
         <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-xl max-w-3xl w-full flex flex-col h-[80vh] border border-slate-100 dark:border-slate-800 transition-colors duration-300">
             <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-1 transition-colors">Sugestões de IA</h3>
-            <p class="text-slate-500 dark:text-slate-400 mb-6 text-sm transition-colors">Afinidade matemática: 60% a 87%.</p>
             <div class="overflow-y-auto flex-1 space-y-3 pr-2" id="aiSugestoesLista"></div>
             <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex gap-3 justify-end transition-colors">
                 <button onclick="fecharModalIA()" class="text-slate-600 dark:text-slate-400 px-4 py-2 rounded-xl font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Cancelar</button>
@@ -348,32 +273,19 @@
         </div>
     </div>
 
-    <!-- Ícones SVG -->
     <svg style="display: none;">
-        <symbol id="icon-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
-        </symbol>
-        <symbol id="icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-        </symbol>
+        <symbol id="icon-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></symbol>
+        <symbol id="icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></symbol>
     </svg>
 
     <script>
-        // --- 1. DARK MODE TOGGLE (CORRIGIDO) ---
         function toggleDarkMode() {
             const html = document.documentElement;
-            // O toggle inverte a classe. Se não tinha 'dark', põe. Se tinha, tira.
             html.classList.toggle('dark');
-            
-            // Grava no LocalStorage de forma robusta
-            if (html.classList.contains('dark')) {
-                localStorage.setItem('theme', 'dark');
-            } else {
-                localStorage.setItem('theme', 'light');
-            }
+            if (html.classList.contains('dark')) localStorage.setItem('theme', 'dark');
+            else localStorage.setItem('theme', 'light');
         }
 
-        // --- 2. BACKUP E IMPORTAÇÃO DE DOCUMENTO ---
         function exportarBackup() {
             const dadosBackup = { dicionarioMescla: dicionarioMescla, exclusoes: exclusoes, dataExportacao: new Date().toISOString() };
             const jsonString = JSON.stringify(dadosBackup, null, 2);
@@ -399,9 +311,7 @@
                         localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla));
                         localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes));
                         alert("✅ Documento de Memória importado com sucesso!");
-                        renderizarRegrasMescla();
-                        renderizarListaExclusoes();
-                        iniciarCruzamento();
+                        renderizarRegrasMescla(); renderizarListaExclusoes(); iniciarCruzamento();
                     } else { alert("❌ Arquivo JSON inválido ou corrompido."); }
                 } catch (err) { alert("❌ Erro ao ler o arquivo: " + err.message); }
             };
@@ -409,19 +319,13 @@
             event.target.value = ''; 
         }
 
-        // --- MEMÓRIA ---
         let dadosRawA = [];
         let dadosRawB = [];
         let dicionarioMescla = JSON.parse(localStorage.getItem('dicMesclaV6')) || {};
         let exclusoes = JSON.parse(localStorage.getItem('exclusoesV6')) || { A: [], B: [] };
         const palavrasExcluidasFixas = ["BICO", "FILTRO"]; 
-        
-        let produtoAguardandoCorrelacao = null; 
-        let idLinhaAguardando = null; 
-        let mesclasEmLote = {}; 
-        let filtroAtual = 'all';
+        let produtoAguardandoCorrelacao = null; let idLinhaAguardando = null; let mesclasEmLote = {}; let filtroAtual = 'all';
 
-        // --- UTILITÁRIOS ---
         function normalizarTexto(texto) {
             if (!texto) return "";
             return String(texto).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim().replace(/\s+/g, ' ');
@@ -431,7 +335,6 @@
             let n = +parseFloat(valor).toFixed(3);
             return isNaN(n) ? 0 : n;
         }
-
         function mostrarNotificacao(titulo, mensagem) {
             let toast = document.getElementById('toastNotificacao');
             document.getElementById('toastTitulo').innerText = titulo;
@@ -440,7 +343,6 @@
             setTimeout(() => toast.classList.add('translate-x-full', 'opacity-0'), 5000);
         }
 
-        // --- IA SIMILARIDADE ---
         function calcularSimilaridade(s1, s2) {
             if (s1 === s2) return 1.0;
             if (s1.length < 2 || s2.length < 2) return 0.0;
@@ -454,7 +356,6 @@
             return (2.0 * intersection) / (s1.length + s2.length - 2);
         }
 
-        // --- ETL E IA HEURÍSTICA ---
         function aplicarDicionario(nomeNormalizado) {
             let atual = nomeNormalizado; let maxLoops = 10;
             while (dicionarioMescla[atual] && maxLoops > 0) { atual = dicionarioMescla[atual]; maxLoops--; }
@@ -486,6 +387,8 @@
 
             if (headerRowIndex === -1) {
                 let numCols = rows.reduce((max, r) => Math.max(max, r.length || 0), 0);
+                if (numCols === 0) return []; // Proteção contra planilha vazia
+                
                 let pts = Array.from({length: numCols}, (_, c) => ({ col: c, pQtd: 0, pDesc: 0, pUM: 0, pCod: 0 }));
 
                 for (let i = 0; i < Math.min(30, rows.length); i++) {
@@ -577,31 +480,70 @@
             return mapa;
         }
 
-        // --- CRUZAMENTO ---
+        // 🟢 3. SOLUÇÃO DO "TRAVAMENTO": ASSINCRONISMO E FEEDBACK VISUAL
         function iniciarCruzamento() {
-            if (dadosRawA.length === 0 && dadosRawB.length === 0) return;
-
-            let dictA = estruturarLado(dadosRawA, 'A'); let dictB = estruturarLado(dadosRawB, 'B');
-            let keysA = Object.keys(dictA); let keysB = Object.keys(dictB); let auto = 0;
-            
-            keysA.filter(k => !keysB.includes(k)).forEach(itemA => {
-                keysB.filter(k => !keysA.includes(k)).forEach(itemB => {
-                    if (!dicionarioMescla[itemA] && !dicionarioMescla[itemB] && calcularSimilaridade(itemA, itemB) >= 0.88) {
-                        dicionarioMescla[itemA] = itemB; auto++;
-                    }
-                });
-            });
-
-            if (auto > 0) {
-                localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla));
-                dictA = estruturarLado(dadosRawA, 'A'); dictB = estruturarLado(dadosRawB, 'B');
+            // Proteção 1: Clicou sem subir arquivo
+            if (dadosRawA.length === 0 && dadosRawB.length === 0) {
+                mostrarNotificacao("Atenção", "Por favor, carregue pelo menos uma planilha antes de processar.");
+                return;
             }
 
-            let todasChaves = new Set([...Object.keys(dictA), ...Object.keys(dictB)]);
-            let listaOrdenada = Array.from(todasChaves).sort();
+            const btn = document.getElementById('btnProcessar');
+            const textoOriginal = btn.innerHTML;
+            
+            // Ativa o visual de Loading (Botão girando)
+            btn.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Processando...`;
+            btn.disabled = true;
+            btn.classList.add('opacity-70', 'cursor-not-allowed');
 
-            renderizarMatriz(listaOrdenada, dictA, dictB);
-            document.getElementById('btnIA').classList.remove('hidden');
+            // setTimeout dá respiro ao navegador para mostrar a animação antes de congelar a thread com matemática
+            setTimeout(() => {
+                try {
+                    let dictA = estruturarLado(dadosRawA, 'A'); 
+                    let dictB = estruturarLado(dadosRawB, 'B');
+                    let keysA = Object.keys(dictA); 
+                    let keysB = Object.keys(dictB); 
+                    let auto = 0;
+                    
+                    // Otimização matemática: Isola apenas os que ainda não bateram
+                    let diffA = keysA.filter(k => !keysB.includes(k));
+                    let diffB = keysB.filter(k => !keysA.includes(k));
+
+                    // IA de União Automática
+                    diffA.forEach(itemA => {
+                        diffB.forEach(itemB => {
+                            if (!dicionarioMescla[itemA] && !dicionarioMescla[itemB] && calcularSimilaridade(itemA, itemB) >= 0.88) {
+                                dicionarioMescla[itemA] = itemB; auto++;
+                            }
+                        });
+                    });
+
+                    if (auto > 0) {
+                        localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla));
+                        dictA = estruturarLado(dadosRawA, 'A'); 
+                        dictB = estruturarLado(dadosRawB, 'B');
+                    }
+
+                    let todasChaves = new Set([...Object.keys(dictA), ...Object.keys(dictB)]);
+                    let listaOrdenada = Array.from(todasChaves).sort();
+
+                    renderizarMatriz(listaOrdenada, dictA, dictB);
+                    document.getElementById('btnIA').classList.remove('hidden');
+                    
+                    if (auto > 0) {
+                        mostrarNotificacao("Automação IA", `A Inteligência uniu ${auto} produtos automaticamente!`);
+                    }
+
+                } catch (error) {
+                    console.error(error);
+                    mostrarNotificacao("Erro", "Ocorreu um erro ao processar. Verifique a planilha.");
+                } finally {
+                    // Desliga o Loading e volta o botão ao normal
+                    btn.innerHTML = textoOriginal;
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-70', 'cursor-not-allowed');
+                }
+            }, 100);
         }
 
         function renderizarMatriz(listaOrdenada, dictA, dictB) {
@@ -647,35 +589,21 @@
                 let iconTrash = `<svg class="w-4 h-4"><use href="#icon-trash"></use></svg>`;
 
                 let acoesA = itemA ? 
-                    `<div class="flex gap-1 justify-center">
-                        <button onclick="cliqueBotaoCorrelacionar('${descFinal}', '${idTr}')" class="btn-acao btn-link" title="Correlacionar">${iconLink}</button>
-                        <button onclick="excluirManual('${descFinal}', 'A')" class="btn-acao btn-del" title="Excluir do A">${iconTrash}</button>
-                    </div>` : '';
-                
+                    `<div class="flex gap-1 justify-center"><button onclick="cliqueBotaoCorrelacionar('${descFinal}', '${idTr}')" class="btn-acao btn-link" title="Correlacionar">${iconLink}</button><button onclick="excluirManual('${descFinal}', 'A')" class="btn-acao btn-del" title="Excluir do A">${iconTrash}</button></div>` : '';
                 let acoesB = itemB ? 
-                    `<div class="flex gap-1 justify-center">
-                        <button onclick="cliqueBotaoCorrelacionar('${descFinal}', '${idTr}')" class="btn-acao btn-link" title="Correlacionar">${iconLink}</button>
-                        <button onclick="excluirManual('${descFinal}', 'B')" class="btn-acao btn-del" title="Excluir do B">${iconTrash}</button>
-                    </div>` : '';
+                    `<div class="flex gap-1 justify-center"><button onclick="cliqueBotaoCorrelacionar('${descFinal}', '${idTr}')" class="btn-acao btn-link" title="Correlacionar">${iconLink}</button><button onclick="excluirManual('${descFinal}', 'B')" class="btn-acao btn-del" title="Excluir do B">${iconTrash}</button></div>` : '';
 
                 let descA = itemA ? 
-                    `<div class="text-xs text-indigo-600 dark:text-indigo-400 font-mono font-bold mb-0.5">Cód: ${itemA.codigo}</div>
-                     <div class="font-medium text-slate-900 dark:text-slate-200">${itemA.descOriginal}</div>` 
-                    : '<span class="text-slate-300 dark:text-slate-600">-</span>';
-
+                    `<div class="text-xs text-indigo-600 dark:text-indigo-400 font-mono font-bold mb-0.5">Cód: ${itemA.codigo}</div><div class="font-medium text-slate-900 dark:text-slate-200">${itemA.descOriginal}</div>` : '<span class="text-slate-300 dark:text-slate-600">-</span>';
                 let descB = itemB ? 
-                    `<div class="text-xs text-indigo-600 dark:text-indigo-400 font-mono font-bold mb-0.5">Cód: ${itemB.codigo}</div>
-                     <div class="font-medium text-slate-900 dark:text-slate-200">${itemB.descOriginal}</div>` 
-                    : '<span class="text-slate-300 dark:text-slate-600">-</span>';
+                    `<div class="text-xs text-indigo-600 dark:text-indigo-400 font-mono font-bold mb-0.5">Cód: ${itemB.codigo}</div><div class="font-medium text-slate-900 dark:text-slate-200">${itemB.descOriginal}</div>` : '<span class="text-slate-300 dark:text-slate-600">-</span>';
 
                 tr.innerHTML = `
                     <td class="p-3 text-slate-500 dark:text-slate-400 transition-colors">${acoesA}</td>
                     <td class="p-3 transition-colors">${descA}</td>
                     <td class="p-3 text-center text-slate-500 dark:text-slate-400 transition-colors">${itemA ? itemA.um : '-'}</td>
                     <td class="p-3 text-right font-bold text-slate-900 dark:text-slate-200 border-r border-slate-200 dark:border-slate-800 transition-colors">${itemA ? itemA.qtd : '-'}</td>
-
                     <td class="p-3 text-center bg-slate-50 dark:bg-slate-800/30 border-r border-slate-200 dark:border-slate-800 transition-colors">${statusHtml}</td>
-
                     <td class="p-3 text-slate-500 dark:text-slate-400 transition-colors">${acoesB}</td>
                     <td class="p-3 transition-colors">${descB}</td>
                     <td class="p-3 text-center text-slate-500 dark:text-slate-400 transition-colors">${itemB ? itemB.um : '-'}</td>
@@ -693,51 +621,34 @@
             aplicarFiltro(filtroAtual);
         }
 
-        // --- MOTOR DE FILTROS VIA CARDS ---
         function aplicarFiltro(tipo) {
             filtroAtual = tipo;
             const cards = ['all', 'ok', 'div', 'soa', 'sob'];
-            
             cards.forEach(c => {
                 const el = document.getElementById(`card-${c}`);
                 if (el) {
-                    if (c === tipo) {
-                        el.classList.add('ring-2', 'ring-indigo-500', 'dark:ring-indigo-400', 'scale-105', 'shadow-md');
-                    } else {
-                        el.classList.remove('ring-2', 'ring-indigo-500', 'dark:ring-indigo-400', 'scale-105', 'shadow-md');
-                    }
+                    if (c === tipo) { el.classList.add('ring-2', 'ring-indigo-500', 'dark:ring-indigo-400', 'scale-105', 'shadow-md'); } 
+                    else { el.classList.remove('ring-2', 'ring-indigo-500', 'dark:ring-indigo-400', 'scale-105', 'shadow-md'); }
                 }
             });
-
             const linhas = document.querySelectorAll('#tbodyMatriz .row-item');
             linhas.forEach(linha => {
-                if (tipo === 'all' || linha.getAttribute('data-status') === tipo) {
-                    linha.style.display = ''; 
-                } else {
-                    linha.style.display = 'none'; 
-                }
+                if (tipo === 'all' || linha.getAttribute('data-status') === tipo) linha.style.display = ''; 
+                else linha.style.display = 'none'; 
             });
         }
 
-        // --- CORRELAÇÃO MANUAL ---
         function cliqueBotaoCorrelacionar(nomeProduto, idTr) {
             if (!produtoAguardandoCorrelacao) {
-                produtoAguardandoCorrelacao = nomeProduto;
-                idLinhaAguardando = idTr;
-                
+                produtoAguardandoCorrelacao = nomeProduto; idLinhaAguardando = idTr;
                 document.getElementById(idTr).classList.add('linha-selecionada');
                 document.getElementById('nomeSelecionado').innerText = nomeProduto;
-                
                 let barra = document.getElementById('barraCorrelação');
                 barra.classList.remove('opacity-0', '-translate-y-24', 'pointer-events-none');
                 barra.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
-            } 
-            else {
+            } else {
                 let origem = produtoAguardandoCorrelacao; let destino = nomeProduto;
-                if (origem !== destino) {
-                    dicionarioMescla[origem] = destino;
-                    localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla));
-                }
+                if (origem !== destino) { dicionarioMescla[origem] = destino; localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); }
                 cancelarCorrelação();
                 if (origem !== destino) iniciarCruzamento();
             }
@@ -755,7 +666,6 @@
             if (!exclusoes[lado].includes(descFinal)) { exclusoes[lado].push(descFinal); localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes)); iniciarCruzamento(); }
         }
 
-        // --- IA EM LOTE ---
         function buscarSugestoesIA() {
             let container = document.getElementById('aiSugestoesLista');
             mesclasEmLote = {}; document.getElementById('aiModal').classList.remove('hidden');
@@ -799,12 +709,8 @@
 
         function aplicarMesclasEmLote() { Object.assign(dicionarioMescla, mesclasEmLote); localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); fecharModalIA(); iniciarCruzamento(); }
         function fecharModalIA() { document.getElementById('aiModal').classList.add('hidden'); }
-
-        // --- CONTROLE DO MANUAL ---
         function abrirManual() { document.getElementById('manualModal').classList.remove('hidden'); }
         function fecharManual() { document.getElementById('manualModal').classList.add('hidden'); }
-
-        // --- GERENCIADOR ---
         function abrirGerenciador() { document.getElementById('regrasModal').classList.remove('hidden'); renderizarRegrasMescla(); renderizarListaExclusoes(); }
         function fecharGerenciador() { document.getElementById('regrasModal').classList.add('hidden'); iniciarCruzamento(); }
         
@@ -837,7 +743,6 @@
         function restaurarExclusao(item, lado) { exclusoes[lado] = exclusoes[lado].filter(i => i !== item); localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes)); renderizarListaExclusoes(); }
         function limparTodaMemoria() { if(confirm("Apagar TODAS as memórias de correlação e exclusão?")) { dicionarioMescla = {}; exclusoes = { A: [], B: [] }; localStorage.clear(); renderizarRegrasMescla(); renderizarListaExclusoes(); } }
 
-        // --- ARQUIVOS ---
         document.getElementById('fileA').addEventListener('change', e => lerArquivoExcel(e.target.files[0], 'A'));
         document.getElementById('fileB').addEventListener('change', e => lerArquivoExcel(e.target.files[0], 'B'));
         
@@ -854,7 +759,6 @@
             r.readAsArrayBuffer(file); 
         }
 
-        // --- TESTE ---
         function carregarDadosTeste() {
             dadosRawA = [ 
                 { codigo: "101", descOriginal: "Oleo Lubrificante Diesel", um: "LT", qtdRaw: 10 }, 
