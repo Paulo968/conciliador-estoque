@@ -111,16 +111,16 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div>
                     <label class="flex items-center gap-2 text-sm font-bold mb-3 text-slate-600 dark:text-slate-400 uppercase tracking-tighter">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Estoque Lado A (Origem)
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span> ESTOQUE LADO A (ESQUERDA)
                     </label>
                     <div class="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-4 relative hover:border-emerald-400 transition-all">
                         <input type="file" id="fileA" accept=".xlsx, .xls, .csv" class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-emerald-50 file:text-emerald-700 dark:file:bg-emerald-900/30 dark:file:text-emerald-400 cursor-pointer outline-none"/>
-                        <div id="loadingA" class="hidden absolute inset-0 bg-white/90 dark:bg-slate-900/90 flex items-center justify-center rounded-2xl z-10 font-black text-indigo-600 uppercase">Processando...</div>
+                        <div id="loadingA" class="hidden absolute inset-0 bg-white/90 dark:bg-slate-900/90 flex items-center justify-center rounded-2xl z-10 font-black text-indigo-600 uppercase tracking-widest">A carregar...</div>
                     </div>
                 </div>
                 <div>
                     <label class="flex items-center gap-2 text-sm font-bold mb-3 text-slate-600 dark:text-slate-400 uppercase tracking-tighter">
-                        <span class="w-2 h-2 rounded-full bg-blue-500"></span> Estoque Lado B (Destino)
+                        <span class="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></span> ESTOQUE LADO B (DIREITA)
                     </label>
                     <div class="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-4 relative hover:border-blue-400 transition-all">
                         <input type="file" id="fileB" accept=".xlsx, .xls, .csv" class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900/30 dark:file:text-blue-400 cursor-pointer outline-none"/>
@@ -152,11 +152,11 @@
                     <span class="text-3xl font-black mt-1 text-amber-600" id="kpiDiv">0</span>
                 </div>
                 <div id="card-soa" onclick="aplicarFiltro('soa')" class="card-kpi bg-white dark:bg-slate-900 border border-rose-100 dark:border-rose-900/30 rounded-2xl p-5 flex flex-col justify-center">
-                    <span class="text-[10px] font-black text-rose-600 uppercase tracking-widest">Só no A</span>
+                    <span class="text-[10px] font-black text-rose-600 uppercase tracking-widest">Sobra Lado A</span>
                     <span class="text-3xl font-black mt-1 text-rose-700" id="kpiSoA">0</span>
                 </div>
                 <div id="card-sob" onclick="aplicarFiltro('sob')" class="card-kpi bg-white dark:bg-slate-900 border border-rose-100 dark:border-rose-900/30 rounded-2xl p-5 flex flex-col justify-center">
-                    <span class="text-[10px] font-black text-rose-600 uppercase tracking-widest">Só no B</span>
+                    <span class="text-[10px] font-black text-rose-600 uppercase tracking-widest">Sobra Lado B</span>
                     <span class="text-3xl font-black mt-1 text-rose-700" id="kpiSoB">0</span>
                 </div>
             </div>
@@ -170,12 +170,12 @@
                     <thead>
                         <tr class="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-black text-[11px] uppercase tracking-widest">
                             <th class="p-4 text-center rounded-tl-2xl">Ações</th>
-                            <th class="p-4 w-[35%]">Lado A (Fiscal)</th>
+                            <th class="p-4 w-[35%]">Estoque Lado A (Esquerda)</th>
                             <th class="p-4 text-center">UM</th>
                             <th class="p-4 text-right border-r border-slate-200 dark:border-slate-700">Saldo A</th>
                             <th class="p-4 text-center bg-slate-200/50 dark:bg-slate-700/50 border-r border-slate-200 dark:border-slate-700">Resultado</th>
                             <th class="p-4 text-center">Ações</th>
-                            <th class="p-4 w-[35%]">Lado B (Gerencial)</th>
+                            <th class="p-4 w-[35%]">Estoque Lado B (Direita)</th>
                             <th class="p-4 text-center">UM</th>
                             <th class="p-4 text-right rounded-tr-2xl">Saldo B</th>
                         </tr>
@@ -201,8 +201,8 @@
             <div class="overflow-y-auto flex-1 pr-4 space-y-12 text-slate-700 dark:text-slate-300 leading-relaxed scrollbar-hide font-medium">
                 
                 <section>
-                    <h4 class="text-2xl font-black text-slate-900 dark:text-white mb-4 italic">O que este protótipo faz? 🚀</h4>
-                    <p class="text-lg">O <strong>Conciliador PRO</strong> é uma ferramenta de auditoria automática que cruza estoques de sistemas diferentes. Ele serve para identificar furos de inventário, erros de lançamento e divergências de unidades de forma instantânea.</p>
+                    <h4 class="text-2xl font-black text-slate-900 dark:text-white mb-4 italic text-indigo-500">A Missão do Protótipo 🎯</h4>
+                    <p class="text-lg leading-relaxed">O <strong>Conciliador PRO</strong> foi desenhado para resolver a maior dor de cabeça da logística: cruzar saldos de estoque quando os nomes dos produtos não batem entre sistemas diferentes (Lado A vs. Lado B). Este sistema entende a semântica dos dados, separando embalagens e fórmulas automaticamente.</p>
                 </section>
 
                 <section class="bg-slate-50 dark:bg-slate-800/50 p-8 rounded-[2rem] border border-slate-100 dark:border-slate-700">
