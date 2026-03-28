@@ -15,7 +15,7 @@
     <!-- 1. Carrega a Biblioteca Primeiro -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 🟢 CORREÇÃO: Biblioteca XLSX (SheetJS) -->
+    <!-- Biblioteca XLSX (SheetJS) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <!-- 2. Ativa o Modo Escuro Manualmente -->
@@ -76,7 +76,6 @@
 
     <input type="file" id="fileImportBackup" accept=".json" class="hidden" onchange="processarImportacaoBackup(event)">
 
-    <!-- 🟢 CORREÇÃO: Transformamos a div limitadora (max-w) num container Full-Width (w-full) com margens laterais (px-4) para respirar -->
     <div class="w-full px-4 md:px-8 py-6 space-y-6">
         
         <header class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 flex flex-col md:flex-row justify-between items-center gap-4 transition-colors duration-300">
@@ -162,29 +161,29 @@
             </div>
 
             <div class="table-container bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-colors duration-300 rounded-xl">
-                <table class="w-full min-w-[1100px] text-sm text-left whitespace-nowrap" id="tabelaPrincipal">
+                <table class="w-full text-sm text-left min-w-[700px]" id="tabelaPrincipal">
                     <thead>
                         <tr class="border-b border-slate-200 dark:border-slate-800">
                             <th colspan="4" class="p-3 text-center text-slate-800 dark:text-slate-200 font-bold border-r border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 transition-colors duration-300">
                                 <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-2 shadow-[0_0_6px_rgba(16,185,129,0.8)]"></span> LADO A
                             </th>
-                            <th class="p-3 text-center text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest bg-slate-100 dark:bg-slate-800 w-32 border-r border-slate-200 dark:border-slate-800 transition-colors duration-300">Status</th>
+                            <th class="p-3 text-center text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest bg-slate-100 dark:bg-slate-800 w-24 border-r border-slate-200 dark:border-slate-800 transition-colors duration-300">Status</th>
                             <th colspan="4" class="p-3 text-center text-slate-800 dark:text-slate-200 font-bold bg-slate-50 dark:bg-slate-800/50 transition-colors duration-300">
                                 <span class="w-2 h-2 rounded-full bg-blue-500 inline-block mr-2 shadow-[0_0_6px_rgba(59,130,246,0.8)]"></span> LADO B
                             </th>
                         </tr>
                         <tr class="text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider border-b-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 transition-colors duration-300">
-                            <th class="p-3 w-16 text-center">Ações</th>
-                            <th class="p-3 min-w-[200px]">Produto (A)</th>
-                            <th class="p-3 w-12 text-center">UM</th>
-                            <th class="p-3 w-20 text-right border-r border-slate-200 dark:border-slate-800">Qtd</th>
+                            <th class="p-3 w-12 text-center whitespace-nowrap">Ações</th>
+                            <th class="p-3 w-[30%]">Produto (A)</th>
+                            <th class="p-3 w-10 text-center whitespace-nowrap">UM</th>
+                            <th class="p-3 w-16 text-right border-r border-slate-200 dark:border-slate-800 whitespace-nowrap">Qtd</th>
                             
-                            <th class="p-3 text-center bg-slate-50 dark:bg-slate-800/30 border-r border-slate-200 dark:border-slate-800">Resultado</th>
+                            <th class="p-3 w-24 text-center bg-slate-50 dark:bg-slate-800/30 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap">Resultado</th>
                             
-                            <th class="p-3 w-16 text-center">Ações</th>
-                            <th class="p-3 min-w-[200px]">Produto (B)</th>
-                            <th class="p-3 w-12 text-center">UM</th>
-                            <th class="p-3 w-20 text-right">Qtd</th>
+                            <th class="p-3 w-12 text-center whitespace-nowrap">Ações</th>
+                            <th class="p-3 w-[30%]">Produto (B)</th>
+                            <th class="p-3 w-10 text-center whitespace-nowrap">UM</th>
+                            <th class="p-3 w-16 text-right whitespace-nowrap">Qtd</th>
                         </tr>
                     </thead>
                     <tbody id="tbodyMatriz" class="divide-y divide-slate-100 dark:divide-slate-800 transition-colors duration-300"></tbody>
@@ -287,6 +286,12 @@
             else localStorage.setItem('theme', 'light');
         }
 
+        // Função auxiliar para escapar aspas em nomes de produtos nos botões HTML
+        function esc(str) {
+            if (!str) return "";
+            return str.replace(/'/g, "\\'");
+        }
+
         function exportarBackup() {
             const dadosBackup = { dicionarioMescla: dicionarioMescla, exclusoes: exclusoes, dataExportacao: new Date().toISOString() };
             const jsonString = JSON.stringify(dadosBackup, null, 2);
@@ -323,7 +328,17 @@
         let dadosRawA = [];
         let dadosRawB = [];
         let dicionarioMescla = JSON.parse(localStorage.getItem('dicMesclaV6')) || {};
-        let exclusoes = JSON.parse(localStorage.getItem('exclusoesV6')) || { A: [], B: [] };
+        
+        // 🟢 CORREÇÃO: Inicialização segura da memória de exclusões (Garante o formato objeto A/B)
+        let rawExcl = localStorage.getItem('exclusoesV6');
+        let exclusoes = { A: [], B: [] };
+        if (rawExcl) {
+            try {
+                let p = JSON.parse(rawExcl);
+                if (p.A && p.B) exclusoes = p;
+            } catch(e) {}
+        }
+
         const palavrasExcluidasFixas = ["BICO", "FILTRO"]; 
         let produtoAguardandoCorrelacao = null; let idLinhaAguardando = null; let mesclasEmLote = {}; let filtroAtual = 'all';
 
@@ -388,36 +403,30 @@
 
             if (headerRowIndex === -1) {
                 let numCols = rows.reduce((max, r) => Math.max(max, r.length || 0), 0);
-                if (numCols === 0) return []; // Proteção contra planilha vazia
-                
+                if (numCols === 0) return [];
                 let pts = Array.from({length: numCols}, (_, c) => ({ col: c, pQtd: 0, pDesc: 0, pUM: 0, pCod: 0 }));
-
                 for (let i = 0; i < Math.min(30, rows.length); i++) {
                     if (!rows[i]) continue;
                     rows[i].forEach((val, c) => {
                         if (c >= numCols || val === null || val === undefined) return;
                         let str = String(val).trim();
                         if (!str) return;
-
                         let isNum = !isNaN(str.replace(',', '.'));
                         let hasDecimal = str.includes('.') || str.includes(',');
                         let hasLeadingZero = str.length > 1 && str.startsWith('0') && !hasDecimal;
                         let hasLettersAndNums = /[a-zA-Z]/.test(str) && /\d/.test(str);
-
                         if (isNum) {
                             pts[c].pQtd += 2; 
                             if (hasDecimal) { pts[c].pQtd += 50; pts[c].pCod -= 50; } 
                             else if (hasLeadingZero) { pts[c].pCod += 50; pts[c].pQtd -= 50; } 
-                            else { pts[c].pCod += 1; }
                         } else {
-                            if (hasLettersAndNums && !str.includes(" ") && str.length <= 15) { pts[c].pCod += 20; } 
-                            else if (str.length >= 2 && str.length <= 15 && !str.includes(" ")) { pts[c].pCod += 3; }
+                            if (hasLettersAndNums && !str.includes(" ") && str.length <= 15) pts[c].pCod += 20;
+                            else if (str.length >= 2 && str.length <= 15 && !str.includes(" ")) pts[c].pCod += 3;
                             if (str.length >= 1 && str.length <= 3 && /[a-zA-Z]/.test(str)) pts[c].pUM += 5; 
                             if (str.length > 8 && str.includes(" ")) pts[c].pDesc += str.length; 
                         }
                     });
                 }
-                
                 let descCol = pts.reduce((max, p) => p.pDesc > max.pDesc ? p : max, pts[0]).col;
                 let qtdC = pts.filter(p => p.col !== descCol);
                 let qtdCol = qtdC.length ? qtdC.reduce((max, p) => p.pQtd > max.pQtd ? p : max, qtdC[0]).col : -1;
@@ -425,28 +434,21 @@
                 let umCol = umC.length ? umC.reduce((max, p) => p.pUM > max.pUM ? p : max, umC[0]).col : -1;
                 let codC = pts.filter(p => p.col !== descCol && p.col !== qtdCol && p.col !== umCol);
                 let codCol = codC.length ? codC.reduce((max, p) => p.pCod > max.pCod ? p : max, codC[0]).col : -1;
-
                 map = { cod: codCol, desc: descCol, qtd: qtdCol, um: umCol };
-                mostrarNotificacao(`Lado ${idLado}: IA Ativada!`, "Cabeçalhos ausentes. Diferenciamos Código e Quantidade de forma matemática.");
+                mostrarNotificacao(`Lado ${idLado}: IA Ativada!`, "Diferenciamos colunas pela lógica matemática.");
             }
 
             let extraido = [];
             for (let i = dataStartIndex; i < rows.length; i++) {
                 let linha = rows[i];
                 if (!linha || !Array.isArray(linha) || linha.length === 0) continue;
-                
                 let original = map.desc !== -1 ? linha[map.desc] : "";
                 if (!original || String(original).trim() === "") continue; 
-
-                let qtdRaw = map.qtd !== -1 ? linha[map.qtd] : 0;
-                let codRaw = map.cod !== -1 ? linha[map.cod] : "-";
-                let umRaw = map.um !== -1 ? linha[map.um] : "UN";
-
                 extraido.push({
-                    codigo: codRaw !== undefined && codRaw !== "" && codRaw !== null ? String(codRaw).trim() : "-",
+                    codigo: map.cod !== -1 && linha[map.cod] !== undefined ? String(linha[map.cod]).trim() : "-",
                     descOriginal: String(original).trim(),
-                    um: String(umRaw).trim().toUpperCase() || "UN",
-                    qtdRaw: qtdRaw
+                    um: map.um !== -1 ? String(linha[map.um]).trim().toUpperCase() : "UN",
+                    qtdRaw: map.qtd !== -1 ? linha[map.qtd] : 0
                 });
             }
             return extraido;
@@ -455,95 +457,54 @@
         function estruturarLado(dadosPadronizados, idLado) {
             let mapa = {};
             dadosPadronizados.forEach(item => {
-                let original = item.descOriginal; 
-                let normal = normalizarTexto(original); 
+                let normal = normalizarTexto(item.descOriginal); 
                 let qtd = normalizarNumero(item.qtdRaw);
-                let codigoAtual = item.codigo;
-
                 if (palavrasExcluidasFixas.some(p => normal.includes(p))) return;
+                
+                // 🟢 CORREÇÃO: Verificação de exclusão side-by-side acontece ANTES do mapeamento
                 let finalDesc = aplicarDicionario(normal);
                 if (exclusoes[idLado].includes(finalDesc)) return;
 
                 if (mapa[finalDesc]) { 
                     mapa[finalDesc].qtd += qtd; 
-                    if (codigoAtual !== "-") {
+                    if (item.codigo !== "-") {
                         let codigosSalvos = mapa[finalDesc].codigo.split(" / ");
-                        if (!codigosSalvos.includes(codigoAtual)) {
-                            if (mapa[finalDesc].codigo === "-") mapa[finalDesc].codigo = codigoAtual;
-                            else mapa[finalDesc].codigo += " / " + codigoAtual;
-                        }
+                        if (!codigosSalvos.includes(item.codigo)) mapa[finalDesc].codigo += " / " + item.codigo;
                     }
                 } 
                 else { 
-                    mapa[finalDesc] = { codigo: codigoAtual, descOriginal: original, um: item.um, qtd: qtd }; 
+                    mapa[finalDesc] = { codigo: item.codigo, descOriginal: item.descOriginal, um: item.um, qtd: qtd }; 
                 }
             });
             return mapa;
         }
 
-        // 🟢 3. SOLUÇÃO DO "TRAVAMENTO": ASSINCRONISMO E FEEDBACK VISUAL
         function iniciarCruzamento() {
-            // Proteção 1: Clicou sem subir arquivo
-            if (dadosRawA.length === 0 && dadosRawB.length === 0) {
-                mostrarNotificacao("Atenção", "Por favor, carregue pelo menos uma planilha antes de processar.");
-                return;
-            }
-
+            if (dadosRawA.length === 0 && dadosRawB.length === 0) return;
             const btn = document.getElementById('btnProcessar');
-            const textoOriginal = btn.innerHTML;
-            
-            // Ativa o visual de Loading (Botão girando)
-            btn.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Processando...`;
-            btn.disabled = true;
-            btn.classList.add('opacity-70', 'cursor-not-allowed');
-
-            // setTimeout dá respiro ao navegador para mostrar a animação antes de congelar a thread com matemática
+            const original = btn.innerHTML;
+            btn.innerHTML = `Processando...`; btn.disabled = true;
             setTimeout(() => {
                 try {
                     let dictA = estruturarLado(dadosRawA, 'A'); 
                     let dictB = estruturarLado(dadosRawB, 'B');
-                    let keysA = Object.keys(dictA); 
-                    let keysB = Object.keys(dictB); 
                     let auto = 0;
-                    
-                    // Otimização matemática: Isola apenas os que ainda não bateram
-                    let diffA = keysA.filter(k => !keysB.includes(k));
-                    let diffB = keysB.filter(k => !keysA.includes(k));
-
-                    // IA de União Automática
-                    diffA.forEach(itemA => {
-                        diffB.forEach(itemB => {
+                    Object.keys(dictA).forEach(itemA => {
+                        Object.keys(dictB).forEach(itemB => {
                             if (!dicionarioMescla[itemA] && !dicionarioMescla[itemB] && calcularSimilaridade(itemA, itemB) >= 0.88) {
                                 dicionarioMescla[itemA] = itemB; auto++;
                             }
                         });
                     });
-
                     if (auto > 0) {
                         localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla));
-                        dictA = estruturarLado(dadosRawA, 'A'); 
-                        dictB = estruturarLado(dadosRawB, 'B');
+                        dictA = estruturarLado(dadosRawA, 'A'); dictB = estruturarLado(dadosRawB, 'B');
                     }
-
                     let todasChaves = new Set([...Object.keys(dictA), ...Object.keys(dictB)]);
-                    let listaOrdenada = Array.from(todasChaves).sort();
-
-                    renderizarMatriz(listaOrdenada, dictA, dictB);
+                    renderizarMatriz(Array.from(todasChaves).sort(), dictA, dictB);
                     document.getElementById('btnIA').classList.remove('hidden');
-                    
-                    if (auto > 0) {
-                        mostrarNotificacao("Automação IA", `A Inteligência uniu ${auto} produtos automaticamente!`);
-                    }
-
-                } catch (error) {
-                    console.error(error);
-                    mostrarNotificacao("Erro", "Ocorreu um erro ao processar. Verifique a planilha.");
-                } finally {
-                    // Desliga o Loading e volta o botão ao normal
-                    btn.innerHTML = textoOriginal;
-                    btn.disabled = false;
-                    btn.classList.remove('opacity-70', 'cursor-not-allowed');
-                }
+                } catch (e) { console.error(e); }
+                finally { btn.innerHTML = original; btn.disabled = false; }
             }, 100);
         }
 
@@ -559,56 +520,35 @@
                 let qA = itemA ? itemA.qtd : 0; let qB = itemB ? itemB.qtd : 0;
                 let diff = normalizarNumero(qA - qB);
 
+                let statusHtml = ""; let tipoStatus = "all";
+                if (diff === 0) { statusHtml = `<span class="badge badge-ok">Bateu</span>`; contOk++; tipoStatus = "ok"; }
+                else if (qA === 0) { statusHtml = `<span class="badge badge-falta">Só no B</span>`; contSoB++; tipoStatus = "sob"; }
+                else if (qB === 0) { statusHtml = `<span class="badge badge-sobra">Só no A</span>`; contSoA++; tipoStatus = "soa"; }
+                else if (diff > 0) { statusHtml = `<span class="badge badge-sobra">+${diff} no A</span>`; contDiv++; tipoStatus = "div"; }
+                else { statusHtml = `<span class="badge badge-falta">${Math.abs(diff)} no A</span>`; contDiv++; tipoStatus = "div"; }
+
                 let tr = document.createElement('tr');
-                let idTr = `row-${index}`;
-                tr.id = idTr;
                 tr.className = "hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors duration-300 row-item";
-
-                let statusHtml = "";
-                let tipoStatus = "all";
-
-                if (diff === 0) { 
-                    statusHtml = `<span class="badge badge-ok">Bateu</span>`; 
-                    contOk++; tipoStatus = "ok";
-                } else if (qA === 0) { 
-                    statusHtml = `<span class="badge badge-falta">Só no B</span>`; 
-                    contSoB++; tipoStatus = "sob";
-                } else if (qB === 0) { 
-                    statusHtml = `<span class="badge badge-sobra">Só no A</span>`; 
-                    contSoA++; tipoStatus = "soa";
-                } else if (diff > 0) { 
-                    statusHtml = `<span class="badge badge-sobra">+${diff} no A</span>`; 
-                    contDiv++; tipoStatus = "div";
-                } else { 
-                    statusHtml = `<span class="badge badge-falta">${Math.abs(diff)} no A</span>`; 
-                    contDiv++; tipoStatus = "div";
-                }
-
                 tr.setAttribute('data-status', tipoStatus);
-
+                
                 let iconLink = `<svg class="w-4 h-4"><use href="#icon-link"></use></svg>`;
                 let iconTrash = `<svg class="w-4 h-4"><use href="#icon-trash"></use></svg>`;
 
-                let acoesA = itemA ? 
-                    `<div class="flex gap-1 justify-center"><button onclick="cliqueBotaoCorrelacionar('${descFinal}', '${idTr}')" class="btn-acao btn-link" title="Correlacionar">${iconLink}</button><button onclick="excluirManual('${descFinal}', 'A')" class="btn-acao btn-del" title="Excluir do A">${iconTrash}</button></div>` : '';
-                let acoesB = itemB ? 
-                    `<div class="flex gap-1 justify-center"><button onclick="cliqueBotaoCorrelacionar('${descFinal}', '${idTr}')" class="btn-acao btn-link" title="Correlacionar">${iconLink}</button><button onclick="excluirManual('${descFinal}', 'B')" class="btn-acao btn-del" title="Excluir do B">${iconTrash}</button></div>` : '';
+                // 🟢 CORREÇÃO: Os botões de exclusão agora passam o lado ('A' ou 'B') e usam esc() para nomes complexos
+                let acoesA = itemA ? `<div class="flex gap-1 justify-center"><button onclick="cliqueBotaoCorrelacionar('${esc(descFinal)}', 'row-${index}')" class="btn-acao btn-link" title="Correlacionar">${iconLink}</button><button onclick="excluirManual('${esc(descFinal)}', 'A')" class="btn-acao btn-del" title="Excluir apenas do A">${iconTrash}</button></div>` : '';
+                let acoesB = itemB ? `<div class="flex gap-1 justify-center"><button onclick="cliqueBotaoCorrelacionar('${esc(descFinal)}', 'row-${index}')" class="btn-acao btn-link" title="Correlacionar">${iconLink}</button><button onclick="excluirManual('${esc(descFinal)}', 'B')" class="btn-acao btn-del" title="Excluir apenas do B">${iconTrash}</button></div>` : '';
 
-                let descA = itemA ? 
-                    `<div class="text-xs text-indigo-600 dark:text-indigo-400 font-mono font-bold mb-0.5">Cód: ${itemA.codigo}</div><div class="font-medium text-slate-900 dark:text-slate-200">${itemA.descOriginal}</div>` : '<span class="text-slate-300 dark:text-slate-600">-</span>';
-                let descB = itemB ? 
-                    `<div class="text-xs text-indigo-600 dark:text-indigo-400 font-mono font-bold mb-0.5">Cód: ${itemB.codigo}</div><div class="font-medium text-slate-900 dark:text-slate-200">${itemB.descOriginal}</div>` : '<span class="text-slate-300 dark:text-slate-600">-</span>';
-
+                tr.id = `row-${index}`;
                 tr.innerHTML = `
-                    <td class="p-3 text-slate-500 dark:text-slate-400 transition-colors">${acoesA}</td>
-                    <td class="p-3 transition-colors">${descA}</td>
-                    <td class="p-3 text-center text-slate-500 dark:text-slate-400 transition-colors">${itemA ? itemA.um : '-'}</td>
-                    <td class="p-3 text-right font-bold text-slate-900 dark:text-slate-200 border-r border-slate-200 dark:border-slate-800 transition-colors">${itemA ? itemA.qtd : '-'}</td>
-                    <td class="p-3 text-center bg-slate-50 dark:bg-slate-800/30 border-r border-slate-200 dark:border-slate-800 transition-colors">${statusHtml}</td>
-                    <td class="p-3 text-slate-500 dark:text-slate-400 transition-colors">${acoesB}</td>
-                    <td class="p-3 transition-colors">${descB}</td>
-                    <td class="p-3 text-center text-slate-500 dark:text-slate-400 transition-colors">${itemB ? itemB.um : '-'}</td>
-                    <td class="p-3 text-right font-bold text-slate-900 dark:text-slate-200 transition-colors">${itemB ? itemB.qtd : '-'}</td>
+                    <td class="p-3 whitespace-nowrap align-top">${acoesA}</td>
+                    <td class="p-3 align-top w-[30%] min-w-[150px]">${itemA ? `<div class="text-xs text-indigo-600 dark:text-indigo-400 font-mono font-bold mb-0.5">Cód: ${itemA.codigo}</div><div class="font-medium text-slate-900 dark:text-slate-200 whitespace-normal break-words">${itemA.descOriginal}</div>` : '<span class="text-slate-300 dark:text-slate-600">-</span>'}</td>
+                    <td class="p-3 text-center align-top">${itemA ? itemA.um : '-'}</td>
+                    <td class="p-3 text-right font-bold border-r border-slate-200 dark:border-slate-800 align-top">${itemA ? itemA.qtd : '-'}</td>
+                    <td class="p-3 text-center bg-slate-50 dark:bg-slate-800/30 border-r border-slate-200 dark:border-slate-800 align-top">${statusHtml}</td>
+                    <td class="p-3 whitespace-nowrap align-top">${acoesB}</td>
+                    <td class="p-3 align-top w-[30%] min-w-[150px]">${itemB ? `<div class="text-xs text-indigo-600 dark:text-indigo-400 font-mono font-bold mb-0.5">Cód: ${itemB.codigo}</div><div class="font-medium text-slate-900 dark:text-slate-200 whitespace-normal break-words">${itemB.descOriginal}</div>` : '<span class="text-slate-300 dark:text-slate-600">-</span>'}</td>
+                    <td class="p-3 text-center align-top">${itemB ? itemB.um : '-'}</td>
+                    <td class="p-3 text-right font-bold align-top">${itemB ? itemB.qtd : '-'}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -618,8 +558,17 @@
             document.getElementById('kpiDiv').innerText = contDiv;
             document.getElementById('kpiSoA').innerText = contSoA;
             document.getElementById('kpiSoB').innerText = contSoB;
-
             aplicarFiltro(filtroAtual);
+        }
+
+        // 🟢 CORREÇÃO: Função Excluir Manual refeita para ser 100% independente por lado
+        function excluirManual(descFinal, lado) {
+            if (!exclusoes[lado].includes(descFinal)) {
+                exclusoes[lado].push(descFinal); 
+                localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes)); 
+                mostrarNotificacao("Item Excluído", `O produto foi removido apenas do Lado ${lado}.`);
+                iniciarCruzamento(); 
+            }
         }
 
         function aplicarFiltro(tipo) {
@@ -628,12 +577,11 @@
             cards.forEach(c => {
                 const el = document.getElementById(`card-${c}`);
                 if (el) {
-                    if (c === tipo) { el.classList.add('ring-2', 'ring-indigo-500', 'dark:ring-indigo-400', 'scale-105', 'shadow-md'); } 
-                    else { el.classList.remove('ring-2', 'ring-indigo-500', 'dark:ring-indigo-400', 'scale-105', 'shadow-md'); }
+                    if (c === tipo) el.classList.add('ring-2', 'ring-indigo-500', 'dark:ring-indigo-400', 'scale-105', 'shadow-md');
+                    else el.classList.remove('ring-2', 'ring-indigo-500', 'dark:ring-indigo-400', 'scale-105', 'shadow-md');
                 }
             });
-            const linhas = document.querySelectorAll('#tbodyMatriz .row-item');
-            linhas.forEach(linha => {
+            document.querySelectorAll('#tbodyMatriz .row-item').forEach(linha => {
                 if (tipo === 'all' || linha.getAttribute('data-status') === tipo) linha.style.display = ''; 
                 else linha.style.display = 'none'; 
             });
@@ -650,53 +598,33 @@
             } else {
                 let origem = produtoAguardandoCorrelacao; let destino = nomeProduto;
                 if (origem !== destino) { dicionarioMescla[origem] = destino; localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); }
-                cancelarCorrelação();
-                if (origem !== destino) iniciarCruzamento();
+                cancelarCorrelação(); iniciarCruzamento();
             }
         }
 
         function cancelarCorrelação() {
-            if (idLinhaAguardando) { let linha = document.getElementById(idLinhaAguardando); if(linha) linha.classList.remove('linha-selecionada'); }
+            if (idLinhaAguardando && document.getElementById(idLinhaAguardando)) document.getElementById(idLinhaAguardando).classList.remove('linha-selecionada');
             produtoAguardandoCorrelacao = null; idLinhaAguardando = null;
             let barra = document.getElementById('barraCorrelação');
             barra.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
             barra.classList.add('opacity-0', '-translate-y-24', 'pointer-events-none');
         }
 
-        function excluirManual(descFinal, lado) {
-            if (!exclusoes[lado].includes(descFinal)) { exclusoes[lado].push(descFinal); localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes)); iniciarCruzamento(); }
-        }
-
         function buscarSugestoesIA() {
             let container = document.getElementById('aiSugestoesLista');
             mesclasEmLote = {}; document.getElementById('aiModal').classList.remove('hidden');
             container.innerHTML = '<div class="p-8 flex justify-center"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>';
-
             setTimeout(() => {
                 let dictA = estruturarLado(dadosRawA, 'A'); let dictB = estruturarLado(dadosRawB, 'B');
                 let chavesA = Object.keys(dictA).filter(k => !dictB[k]); let chavesB = Object.keys(dictB).filter(k => !dictA[k]);
                 let sugestoes = [];
-                
-                chavesA.forEach(itemA => {
-                    chavesB.forEach(itemB => {
-                        let score = calcularSimilaridade(itemA, itemB);
-                        if (score >= 0.60 && score < 0.88) sugestoes.push({ itemA, itemB, score });
-                    });
-                });
+                chavesA.forEach(itemA => { chavesB.forEach(itemB => { let score = calcularSimilaridade(itemA, itemB); if (score >= 0.60 && score < 0.88) sugestoes.push({ itemA, itemB, score }); }); });
                 sugestoes.sort((a, b) => b.score - a.score); container.innerHTML = '';
-                if (sugestoes.length === 0) { container.innerHTML = '<p class="text-center text-slate-500 dark:text-slate-400 py-6">Nenhuma similaridade encontrada.</p>'; return; }
-
+                if (sugestoes.length === 0) { container.innerHTML = '<p class="text-center py-6">Nenhuma similaridade encontrada.</p>'; return; }
                 sugestoes.forEach((sug, idx) => {
-                    let div = document.createElement('div'); let idBtn = `btn-batch-${idx}`;
+                    let div = document.createElement('div');
                     div.className = "bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors duration-300";
-                    div.innerHTML = `
-                        <div class="text-sm w-full">
-                            <div class="font-medium text-slate-800 dark:text-slate-200"><span class="text-slate-400 dark:text-slate-500 mr-2">A</span> ${sug.itemA}</div>
-                            <div class="font-medium text-slate-800 dark:text-slate-200 mt-1"><span class="text-slate-400 dark:text-slate-500 mr-2">B</span> ${sug.itemB}</div>
-                            <div class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold mt-2 bg-indigo-50 dark:bg-indigo-900/30 inline-block px-2 py-1 rounded">Afinidade: ${Math.round(sug.score * 100)}%</div>
-                        </div>
-                        <button id="${idBtn}" onclick="agendarMesclaLote('${sug.itemA}', '${sug.itemB}', '${idBtn}')" class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 px-6 py-2 rounded-lg text-sm font-semibold w-full md:w-auto hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors duration-300">Unir Pares</button>
-                    `;
+                    div.innerHTML = `<div class="text-sm w-full"><div class="font-medium text-slate-800 dark:text-slate-200"><span class="text-slate-400 mr-2">A</span> ${sug.itemA}</div><div class="font-medium text-slate-800 dark:text-slate-200 mt-1"><span class="text-slate-400 mr-2">B</span> ${sug.itemB}</div><div class="text-xs text-indigo-600 font-semibold mt-2 bg-indigo-50 px-2 py-1 rounded">Afinidade: ${Math.round(sug.score * 100)}%</div></div><button id="btn-batch-${idx}" onclick="agendarMesclaLote('${esc(sug.itemA)}', '${esc(sug.itemB)}', 'btn-batch-${idx}')" class="bg-white dark:bg-slate-700 border border-slate-200 text-slate-700 dark:text-slate-200 px-6 py-2 rounded-lg text-sm font-semibold w-full md:w-auto hover:bg-slate-50 transition-colors">Unir Pares</button>`;
                     container.appendChild(div);
                 });
             }, 300);
@@ -704,8 +632,8 @@
 
         function agendarMesclaLote(itemA, itemB, idBtn) {
             let btn = document.getElementById(idBtn);
-            if (mesclasEmLote[itemA]) { delete mesclasEmLote[itemA]; btn.innerText = "Unir Pares"; btn.className = "bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 px-6 py-2 rounded-lg text-sm font-semibold w-full md:w-auto hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors duration-300"; } 
-            else { mesclasEmLote[itemA] = itemB; btn.innerText = "✓ Selecionado"; btn.className = "bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-semibold w-full md:w-auto shadow-md transition-colors duration-300"; }
+            if (mesclasEmLote[itemA]) { delete mesclasEmLote[itemA]; btn.innerText = "Unir Pares"; btn.className = "bg-white dark:bg-slate-700 border border-slate-200 text-slate-700 dark:text-slate-200 px-6 py-2 rounded-lg text-sm font-semibold w-full md:w-auto hover:bg-slate-50 transition-colors"; } 
+            else { mesclasEmLote[itemA] = itemB; btn.innerText = "✓ Selecionado"; btn.className = "bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-semibold w-full md:w-auto shadow-md"; }
         }
 
         function aplicarMesclasEmLote() { Object.assign(dicionarioMescla, mesclasEmLote); localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); fecharModalIA(); iniciarCruzamento(); }
@@ -719,16 +647,16 @@
             let isM = aba === 'mesclas';
             document.getElementById('conteudoMesclas').classList.toggle('hidden', !isM);
             document.getElementById('conteudoExclusoes').classList.toggle('hidden', isM);
-            document.getElementById('abaMesclas').className = isM ? "px-4 py-2 text-sm font-semibold rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 transition-colors" : "px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer";
-            document.getElementById('abaExclusoes').className = !isM ? "px-4 py-2 text-sm font-semibold rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 transition-colors" : "px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer";
+            document.getElementById('abaMesclas').className = isM ? "px-4 py-2 text-sm font-semibold rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 transition-colors" : "px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 hover:bg-slate-50 transition-colors cursor-pointer";
+            document.getElementById('abaExclusoes').className = !isM ? "px-4 py-2 text-sm font-semibold rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 transition-colors" : "px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 hover:bg-slate-50 transition-colors cursor-pointer";
         }
         
         function renderizarRegrasMescla() {
             let tbody = document.getElementById('tbodyRegras'); tbody.innerHTML = ''; let chaves = Object.keys(dicionarioMescla);
-            if(chaves.length === 0) { tbody.innerHTML = '<tr><td class="p-6 text-center text-slate-400 dark:text-slate-500">Sem correlações feitas.</td></tr>'; return; }
+            if(chaves.length === 0) { tbody.innerHTML = '<tr><td class="p-6 text-center text-slate-400">Sem correlações feitas.</td></tr>'; return; }
             chaves.forEach(origem => {
                 let tr = document.createElement('tr');
-                tr.innerHTML = `<td class="p-3 text-sm text-slate-600 dark:text-slate-300">${origem} <span class="mx-2 text-slate-300 dark:text-slate-600">➔</span> <span class="font-semibold text-slate-900 dark:text-white">${dicionarioMescla[origem]}</span></td><td class="p-3 text-right"><button onclick="removerMescla('${origem}')" class="text-red-500 font-semibold text-xs hover:bg-red-50 dark:hover:bg-red-900/30 px-3 py-1.5 rounded transition-colors duration-300">Desfazer</button></td>`;
+                tr.innerHTML = `<td class="p-3 text-sm text-slate-600 dark:text-slate-300">${origem} <span class="mx-2 text-slate-300">➔</span> <span class="font-semibold text-slate-900 dark:text-white">${dicionarioMescla[origem]}</span></td><td class="p-3 text-right"><button onclick="removerMescla('${esc(origem)}')" class="text-red-500 font-semibold text-xs hover:bg-red-50 px-3 py-1.5 rounded transition-colors duration-300">Desfazer</button></td>`;
                 tbody.appendChild(tr);
             });
         }
@@ -736,42 +664,21 @@
         function renderizarListaExclusoes() {
             let tbodyA = document.getElementById('tbodyExcluidosA'); let tbodyB = document.getElementById('tbodyExcluidosB');
             tbodyA.innerHTML = ''; tbodyB.innerHTML = '';
-            exclusoes.A.forEach(item => tbodyA.innerHTML += `<tr><td class="p-3 text-sm flex justify-between items-center text-slate-600 dark:text-slate-300"><span>${item}</span> <button onclick="restaurarExclusao('${item}', 'A')" class="text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-2 py-1 rounded font-medium transition-colors duration-300">Voltar</button></td></tr>`);
-            exclusoes.B.forEach(item => tbodyB.innerHTML += `<tr><td class="p-3 text-sm flex justify-between items-center text-slate-600 dark:text-slate-300"><span>${item}</span> <button onclick="restaurarExclusao('${item}', 'B')" class="text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-2 py-1 rounded font-medium transition-colors duration-300">Voltar</button></td></tr>`);
+            exclusoes.A.forEach(item => tbodyA.innerHTML += `<tr><td class="p-3 text-sm flex justify-between items-center text-slate-600 dark:text-slate-300"><span>${item}</span> <button onclick="restaurarExclusao('${esc(item)}', 'A')" class="text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded font-medium transition-colors duration-300">Voltar</button></td></tr>`);
+            exclusoes.B.forEach(item => tbodyB.innerHTML += `<tr><td class="p-3 text-sm flex justify-between items-center text-slate-600 dark:text-slate-300"><span>${item}</span> <button onclick="restaurarExclusao('${esc(item)}', 'B')" class="text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded font-medium transition-colors duration-300">Voltar</button></td></tr>`);
         }
         
         function removerMescla(origem) { delete dicionarioMescla[origem]; localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); renderizarRegrasMescla(); }
-        function restaurarExclusao(item, lado) { exclusoes[lado] = exclusoes[lado].filter(i => i !== item); localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes)); renderizarListaExclusoes(); }
-        function limparTodaMemoria() { if(confirm("Apagar TODAS as memórias de correlação e exclusão?")) { dicionarioMescla = {}; exclusoes = { A: [], B: [] }; localStorage.clear(); renderizarRegrasMescla(); renderizarListaExclusoes(); } }
+        function restaurarExclusao(item, lado) { exclusoes[lado] = exclusoes[lado].filter(i => i !== item); localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes)); renderizarListaExclusoes(); iniciarCruzamento(); }
+        function limparTodaMemoria() { if(confirm("Apagar TODAS as memórias?")) { dicionarioMescla = {}; exclusoes = { A: [], B: [] }; localStorage.clear(); renderizarRegrasMescla(); renderizarListaExclusoes(); iniciarCruzamento(); } }
 
         document.getElementById('fileA').addEventListener('change', e => lerArquivoExcel(e.target.files[0], 'A'));
         document.getElementById('fileB').addEventListener('change', e => lerArquivoExcel(e.target.files[0], 'B'));
-        
-        function lerArquivoExcel(file, idLado) { 
-            const r = new FileReader(); 
-            r.onload = function(e) { 
-                const w = XLSX.read(new Uint8Array(e.target.result), {type: 'array'}); 
-                const rows = XLSX.utils.sheet_to_json(w.Sheets[w.SheetNames[0]], {header: 1, defval: ""});
-                
-                let dadosPadronizados = classificarEExtrairDados(rows, idLado);
-                if (idLado === 'A') dadosRawA = dadosPadronizados;
-                else dadosRawB = dadosPadronizados;
-            }; 
-            r.readAsArrayBuffer(file); 
-        }
+        function lerArquivoExcel(file, idLado) { const r = new FileReader(); r.onload = function(e) { const w = XLSX.read(new Uint8Array(e.target.result), {type: 'array'}); const rows = XLSX.utils.sheet_to_json(w.Sheets[w.SheetNames[0]], {header: 1, defval: ""}); let dadosPadronizados = classificarEExtrairDados(rows, idLado); if (idLado === 'A') dadosRawA = dadosPadronizados; else dadosRawB = dadosPadronizados; }; r.readAsArrayBuffer(file); }
 
         function carregarDadosTeste() {
-            dadosRawA = [ 
-                { codigo: "101", descOriginal: "Oleo Lubrificante Diesel", um: "LT", qtdRaw: 10 }, 
-                { codigo: "105", descOriginal: "Oleo Lubr Diesel", um: "LT", qtdRaw: 2 },
-                { codigo: "102", descOriginal: "Adubo Especial Lado Esquerdo", um: "KG", qtdRaw: 5 },
-                { codigo: "-", descOriginal: "Produto Sem Codigo", um: "CX", qtdRaw: 50 }
-            ];
-            dadosRawB = [ 
-                { codigo: "201", descOriginal: "OLEO LUBRIFICANTE", um: "LT", qtdRaw: 12 }, 
-                { codigo: "103", descOriginal: "Adubo Esp Lado Direito", um: "KG", qtdRaw: 5 },
-                { codigo: "999", descOriginal: "Produto Sem Codigo", um: "CX", qtdRaw: 50 }
-            ];
+            dadosRawA = [ { codigo: "101", descOriginal: "Oleo Lubrificante Diesel", um: "LT", qtdRaw: 10 }, { codigo: "105", descOriginal: "Oleo Lubr Diesel", um: "LT", qtdRaw: 2 }, { codigo: "102", descOriginal: "Adubo Especial Lado Esquerdo", um: "KG", qtdRaw: 5 }, { codigo: "-", descOriginal: "Produto Sem Codigo", um: "CX", qtdRaw: 50 } ];
+            dadosRawB = [ { codigo: "201", descOriginal: "OLEO LUBRIFICANTE", um: "LT", qtdRaw: 12 }, { codigo: "103", descOriginal: "Adubo Esp Lado Direito", um: "KG", qtdRaw: 5 }, { codigo: "999", descOriginal: "Produto Sem Codigo", um: "CX", qtdRaw: 50 } ];
             iniciarCruzamento();
         }
     </script>
