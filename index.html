@@ -225,28 +225,68 @@
             <div class="flex justify-between items-center mb-4 border-b border-slate-200 dark:border-slate-800 pb-4">
                 <h3 class="text-xl md:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2 transition-colors">
                     <svg class="w-6 h-6 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                    Manual do Usuário
+                    Manual do Utilizador
                 </h3>
                 <button onclick="fecharManual()" class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg p-2 transition-colors duration-300">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </div>
             
+            <!-- CONTEÚDO DO MANUAL 100% EXPLICATIVO -->
             <div class="overflow-y-auto flex-1 pr-2 space-y-6 text-slate-700 dark:text-slate-300 text-sm md:text-base leading-relaxed transition-colors">
-                <p>Bem-vindo ao <strong>Conciliador de Estoque PRO</strong>. Este sistema audita, limpa e cruza dados de estoques rodando 100% no seu navegador.</p>
+                <p>Bem-vindo ao <strong>Conciliador de Estoque PRO</strong>. Este sistema foi desenhado para auditar, limpar e cruzar dados de duas fontes de stock diferentes de forma instantânea, rodando 100% no seu navegador com máxima segurança.</p>
+
                 <section>
-                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2 transition-colors">1. 📝 Preparação e Formatos</h4>
-                    <p class="mb-2">Aceitamos <strong>.xlsx</strong>, <strong>.xls</strong> e <strong>.csv</strong>. Se a planilha não tiver cabeçalho, a nossa IA tentará identificar as colunas Código, Descrição e Saldo automaticamente através de matemática!</p>
+                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2 transition-colors">1. 📝 Preparação de Ficheiros e IA de Leitura</h4>
+                    <ul class="list-disc pl-6 space-y-2">
+                        <li><strong>Formatos Aceites:</strong> O sistema aceita exportações padrão de qualquer ERP em <code>.xlsx</code>, <code>.xls</code> ou <code>.csv</code>.</li>
+                        <li><strong>Com Cabeçalho:</strong> O sistema procura palavras-chave na primeira linha (ex: <em>Desc, Prod, Qtd, Saldo, Cod</em>).</li>
+                        <li><strong>Motor Heurístico (Sem Cabeçalho):</strong> Se a sua folha de cálculo não tiver títulos, não há problema! A Inteligência Artificial analisa matematicamente o padrão das primeiras 30 linhas:
+                            <ul class="list-none pl-4 mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-400 border-l-2 border-slate-200 dark:border-slate-700">
+                                <li class="pl-2">🔹 <strong>Quantidade:</strong> Identificada por números decimais (ex: 573.00).</li>
+                                <li class="pl-2">🔹 <strong>Descrição:</strong> Identificada por textos longos com espaços.</li>
+                                <li class="pl-2">🔹 <strong>Código:</strong> Identificado por zeros à esquerda ou alfanuméricos sem espaço.</li>
+                            </ul>
+                        </li>
+                    </ul>
                 </section>
+
                 <section>
-                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2 transition-colors">2. 📊 Entendendo o Dashboard e Filtros</h4>
-                    <p>No topo da tabela, existem cartões mostrando o status do seu estoque. <strong>Você pode clicar em qualquer um deles para filtrar a tabela instantaneamente.</strong></p>
+                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2 transition-colors">2. 📊 Dashboard Interativo (Filtros Inteligentes)</h4>
+                    <p class="mb-2">Os cinco cartões no topo da tabela não mostram apenas o resumo, são <strong>filtros dinâmicos</strong>. Clique num cartão para isolar imediatamente os dados na tabela:</p>
+                    <ul class="list-disc pl-6 space-y-1">
+                        <li><strong class="text-emerald-600 dark:text-emerald-400">🟢 Bateu (OK):</strong> Produtos existentes nos dois lados com quantidade exata.</li>
+                        <li><strong class="text-amber-600 dark:text-amber-400">🟠 Divergências:</strong> Produtos existentes nos dois lados, mas com diferença na quantidade (Sobra/Falta).</li>
+                        <li><strong class="text-rose-600 dark:text-rose-400">🔴 Só no A / Só no B:</strong> Produtos isolados (furos de stock, notas não lançadas, erros de registo).</li>
+                    </ul>
                 </section>
+
                 <section>
-                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2 transition-colors">3. 🛠️ Ações Manuais (Botões na Tabela)</h4>
+                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2 transition-colors">3. 🛠️ Ações Manuais e Rastreabilidade</h4>
+                    <p class="mb-3">Se os produtos tiverem nomes muito diferentes, pode uni-los manualmente. O sistema preserva a <strong>Rastreabilidade</strong>: o código do produto aparece sempre em cima do nome em azul. Se unir dois produtos do mesmo lado, os códigos somam-se separados por uma barra (ex: <code class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-1 rounded">101 / 105</code>).</p>
                     <ul class="space-y-4">
-                        <li><strong class="flex items-center gap-2">🔗 Correlação:</strong> Clique no link do primeiro produto. Uma barra roxa aparecerá. Clique no link do segundo produto para fundi-los.</li>
-                        <li><strong class="flex items-center gap-2">🗑️ Exclusão:</strong> Remove "lixo" apenas daquele lado específico.</li>
+                        <li class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700">
+                            <strong class="flex items-center gap-2 mb-1"><svg class="w-4 h-4 text-indigo-500"><use href="#icon-link"></use></svg> Botão Correlacionar (Unir):</strong> 
+                            Clique no link do 1º produto. Uma barra roxa descerá no topo da ecrã. Depois, clique no link do 2º produto. Eles fundem-se, as quantidades somam-se e a regra fica guardada.
+                        </li>
+                        <li class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700">
+                            <strong class="flex items-center gap-2 mb-1"><svg class="w-4 h-4 text-rose-500"><use href="#icon-trash"></use></svg> Botão Excluir:</strong> 
+                            Remove lixo operacional apenas daquele lado. O item desaparece da tabela, mas o sistema guarda a exclusão na memória.
+                        </li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2 transition-colors">4. ✨ Assistente de IA em Lote</h4>
+                    <p>Um botão amarelo chamado <strong>"Buscar Similares via IA"</strong> aparecerá após o processamento. Ele varre a tabela à procura de produtos com 60% a 87% de semelhança (ex: <em>Adubo NPK</em> vs <em>Adubo N.P.K Especial</em>). Basta aprovar os pares e aplicar de uma só vez para poupar horas de trabalho.</p>
+                </section>
+
+                <section>
+                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2 transition-colors">5. 🧠 Memória, Desfazer e Backup</h4>
+                    <p class="mb-2">A ferramenta utiliza edição não-destrutiva. O seu ficheiro original está sempre seguro.</p>
+                    <ul class="list-disc pl-6 space-y-2">
+                        <li><strong>Desfazer Erros:</strong> Clicou errado? Vá a <em>Memória de Regras</em> no topo da ecrã. Pode desfazer qualquer correlação ou restaurar itens excluídos a qualquer momento.</li>
+                        <li><strong>Exportar Backup (.json):</strong> Para não perder a inteligência e as regras que criou, clique em exportar. No dia seguinte, ou noutro computador da AP Agrícola, basta importar este ficheiro e o sistema lembrará de todas as regras que já lhe ensinou!</li>
                     </ul>
                 </section>
             </div>
@@ -772,8 +812,8 @@
             let isM = aba === 'mesclas';
             document.getElementById('conteudoMesclas').classList.toggle('hidden', !isM);
             document.getElementById('conteudoExclusoes').classList.toggle('hidden', isM);
-            document.getElementById('abaMesclas').className = isM ? "px-4 py-2 text-sm font-semibold rounded-lg bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 transition-colors" : "px-4 py-2 text-sm font-semibold rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer";
-            document.getElementById('abaExclusoes').className = !isM ? "px-4 py-2 text-sm font-semibold rounded-lg bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 transition-colors" : "px-4 py-2 text-sm font-semibold rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer";
+            document.getElementById('abaMesclas').className = isM ? "px-4 py-2 text-sm font-semibold rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 transition-colors" : "px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer";
+            document.getElementById('abaExclusoes').className = !isM ? "px-4 py-2 text-sm font-semibold rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 transition-colors" : "px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer";
         }
         
         function renderizarRegrasMescla() {
