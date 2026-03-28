@@ -198,6 +198,15 @@
         </button>
     </div>
 
+    <!-- 🟢 TOAST DE NOTIFICAÇÃO DA IA HEURÍSTICA -->
+    <div id="toastNotificacao" class="fixed top-6 right-6 transform translate-x-full opacity-0 bg-gray-900 dark:bg-indigo-900 text-white px-6 py-4 rounded-xl shadow-2xl transition-all duration-500 z-50 flex items-center gap-3 border border-gray-700 dark:border-indigo-700">
+        <span class="text-2xl">🤖</span>
+        <div>
+            <p class="font-bold text-sm" id="toastTitulo">Aviso</p>
+            <p class="text-indigo-300 dark:text-indigo-200 text-xs mt-0.5 max-w-[200px]" id="toastMsg">Mensagem aqui</p>
+        </div>
+    </div>
+
     <!-- 🟢 Modal do Manual de Uso Embutido -->
     <div id="manualModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
         <div class="bg-white dark:bg-gray-900 p-6 md:p-8 rounded-2xl shadow-xl max-w-4xl w-full flex flex-col h-[90vh] border border-gray-100 dark:border-gray-700 transition-colors">
@@ -447,6 +456,15 @@
             return isNaN(n) ? 0 : n;
         }
 
+        // Função para mostrar a notificação no canto da tela
+        function mostrarNotificacao(titulo, mensagem) {
+            let toast = document.getElementById('toastNotificacao');
+            document.getElementById('toastTitulo').innerText = titulo;
+            document.getElementById('toastMsg').innerText = mensagem;
+            toast.classList.remove('translate-x-full', 'opacity-0');
+            setTimeout(() => toast.classList.add('translate-x-full', 'opacity-0'), 5000);
+        }
+
         // --- IA SIMILARIDADE ---
         function calcularSimilaridade(s1, s2) {
             if (s1 === s2) return 1.0;
@@ -468,16 +486,117 @@
             return atual;
         }
 
-        function estruturarLado(dadosBrutos, idLado) {
-            let mapa = {};
-            dadosBrutos.forEach(linha => {
-                let chaves = Object.keys(linha);
-                let cCod = chaves.find(k => /cod|código/i.test(k)); let cDesc = chaves.find(k => /desc|prod|nome/i.test(k));
-                let cQtd = chaves.find(k => /qtd|quant|saldo/i.test(k)); let cUM = chaves.find(k => /um|unid|medida/i.test(k));
+        // 🟢 IA HEURÍSTICA: O Motor à prova de falhas para ler Excel sem cabeçalho
+        function classificarEExtrairDados(rows, idLado) {
+            if (rows.length === 0) return [];
+            let headerRowIndex = -1;
+            let map = { cod: -1, desc: -1, qtd: -1, um: -1 };
 
-                if (!cDesc) return;
-                let original = linha[cDesc]; let normal = normalizarTexto(original); let qtd = normalizarNumero(linha[cQtd]);
-                let codigoAtual = cCod && linha[cCod] !== undefined && linha[cCod] !== "" ? String(linha[cCod]).trim() : "-";
+            // 1. Busca Clássica Inteligente
+            for (let i = 0; i < Math.min(10, rows.length); i++) {
+                let linha = rows[i];
+                if (!linha || !Array.isArray(linha)) continue;
+
+                let m = { cod: -1, desc: -1, qtd: -1, um: -1 };
+                linha.forEach((val, cIdx) => {
+                    if (!val) return;
+                    let v = String(val).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+                    if (v.includes("cod") || v.includes("sku") || v.includes("ref") || v === "id") m.cod = cIdx;
+                    else if (v.includes("desc") || v.includes("prod") || v.includes("nome") || v.includes("mat")) m.desc = cIdx;
+                    else if (v.includes("qtd") || v.includes("quant") || v.includes("saldo") || v.includes("est")) m.qtd = cIdx;
+                    else if (v === "um" || v.includes("unid") || v.includes("medida")) m.um = cIdx;
+                });
+                
+                if (m.desc !== -1 && m.qtd !== -1) { 
+                    headerRowIndex = i; map = m; break; 
+                }
+            }
+
+            let dataStartIndex = headerRowIndex !== -1 ? headerRowIndex + 1 : 0;
+
+            // 2. IA HEURÍSTICA MATEMÁTICA (Código vs Quantidade Amarrado!)
+            if (headerRowIndex === -1) {
+                let numCols = rows.reduce((max, r) => Math.max(max, r.length || 0), 0);
+                let pts = Array.from({length: numCols}, (_, c) => ({ col: c, pQtd: 0, pDesc: 0, pUM: 0, pCod: 0 }));
+
+                for (let i = 0; i < Math.min(30, rows.length); i++) {
+                    if (!rows[i]) continue;
+                    rows[i].forEach((val, c) => {
+                        if (c >= numCols || val === null || val === undefined) return;
+                        let str = String(val).trim();
+                        if (!str) return;
+
+                        let isNum = !isNaN(str.replace(',', '.'));
+                        let hasDecimal = str.includes('.') || str.includes(',');
+                        let hasLeadingZero = str.length > 1 && str.startsWith('0') && !hasDecimal;
+                        let hasLettersAndNums = /[a-zA-Z]/.test(str) && /\d/.test(str);
+
+                        if (isNum) {
+                            pts[c].pQtd += 2; 
+                            if (hasDecimal) {
+                                pts[c].pQtd += 50; // Ponto decimal (573.00) = 100% Quantidade
+                                pts[c].pCod -= 50; // Código não tem ponto decimal
+                            } else if (hasLeadingZero) {
+                                pts[c].pCod += 50; // Zero à esquerda (01111) = 100% Código
+                                pts[c].pQtd -= 50;
+                            } else {
+                                pts[c].pCod += 1; // Número inteiro normal pode ser os dois
+                            }
+                        } else {
+                            if (hasLettersAndNums && !str.includes(" ") && str.length <= 15) {
+                                pts[c].pCod += 20; // Alfanumérico sem espaço (A123) = 100% Código
+                            } else if (str.length >= 2 && str.length <= 15 && !str.includes(" ")) {
+                                pts[c].pCod += 3; 
+                            }
+                            
+                            if (str.length >= 1 && str.length <= 3 && /[a-zA-Z]/.test(str)) pts[c].pUM += 5; // LT, KG, UN
+                            if (str.length > 8 && str.includes(" ")) pts[c].pDesc += str.length; // Descrição
+                        }
+                    });
+                }
+                
+                let descCol = pts.reduce((max, p) => p.pDesc > max.pDesc ? p : max, pts[0]).col;
+                let qtdC = pts.filter(p => p.col !== descCol);
+                let qtdCol = qtdC.length ? qtdC.reduce((max, p) => p.pQtd > max.pQtd ? p : max, qtdC[0]).col : -1;
+                let umC = pts.filter(p => p.col !== descCol && p.col !== qtdCol);
+                let umCol = umC.length ? umC.reduce((max, p) => p.pUM > max.pUM ? p : max, umC[0]).col : -1;
+                let codC = pts.filter(p => p.col !== descCol && p.col !== qtdCol && p.col !== umCol);
+                let codCol = codC.length ? codC.reduce((max, p) => p.pCod > max.pCod ? p : max, codC[0]).col : -1;
+
+                map = { cod: codCol, desc: descCol, qtd: qtdCol, um: umCol };
+                mostrarNotificacao(`Lado ${idLado}: IA Ativada!`, "Cabeçalhos ausentes. Diferenciamos Código e Quantidade pela lógica matemática.");
+            }
+
+            // 3. Extração e Padronização
+            let extraido = [];
+            for (let i = dataStartIndex; i < rows.length; i++) {
+                let linha = rows[i];
+                if (!linha || !Array.isArray(linha) || linha.length === 0) continue;
+                
+                let original = map.desc !== -1 ? linha[map.desc] : "";
+                if (!original || String(original).trim() === "") continue; 
+
+                let qtdRaw = map.qtd !== -1 ? linha[map.qtd] : 0;
+                let codRaw = map.cod !== -1 ? linha[map.cod] : "-";
+                let umRaw = map.um !== -1 ? linha[map.um] : "UN";
+
+                extraido.push({
+                    codigo: codRaw !== undefined && codRaw !== "" && codRaw !== null ? String(codRaw).trim() : "-",
+                    descOriginal: String(original).trim(),
+                    um: String(umRaw).trim().toUpperCase() || "UN",
+                    qtdRaw: qtdRaw
+                });
+            }
+            return extraido;
+        }
+
+        function estruturarLado(dadosPadronizados, idLado) {
+            let mapa = {};
+            dadosPadronizados.forEach(item => {
+                let original = item.descOriginal; 
+                let normal = normalizarTexto(original); 
+                let qtd = normalizarNumero(item.qtdRaw);
+                let codigoAtual = item.codigo;
 
                 if (palavrasExcluidasFixas.some(p => normal.includes(p))) return;
                 let finalDesc = aplicarDicionario(normal);
@@ -485,7 +604,6 @@
 
                 if (mapa[finalDesc]) { 
                     mapa[finalDesc].qtd += qtd; 
-                    // Lógica de Rastreabilidade: Concatena os códigos diferentes
                     if (codigoAtual !== "-") {
                         let codigosSalvos = mapa[finalDesc].codigo.split(" / ");
                         if (!codigosSalvos.includes(codigoAtual)) {
@@ -495,7 +613,7 @@
                     }
                 } 
                 else { 
-                    mapa[finalDesc] = { codigo: codigoAtual, descOriginal: original, um: cUM ? linha[cUM] : "UN", qtd: qtd }; 
+                    mapa[finalDesc] = { codigo: codigoAtual, descOriginal: original, um: item.um, qtd: qtd }; 
                 }
             });
             return mapa;
@@ -569,16 +687,28 @@
                         <button onclick="excluirManual('${descFinal}', 'B')" class="btn-acao btn-del" title="Excluir do B">${iconTrash}</button>
                     </div>` : '';
 
+                // 🟢 AQUI: O Código aparece ANTES (em cima) da descrição. 
+                // A lógica de juntar códigos (ex: 1111 / 01111) já acontece automaticamente aqui!
+                let descA = itemA ? 
+                    `<div class="text-xs text-indigo-600 dark:text-indigo-400 font-mono font-bold mb-0.5">Cód: ${itemA.codigo}</div>
+                     <div class="font-medium text-gray-900 dark:text-gray-200">${itemA.descOriginal}</div>` 
+                    : '<span class="text-gray-300 dark:text-gray-600">-</span>';
+
+                let descB = itemB ? 
+                    `<div class="text-xs text-indigo-600 dark:text-indigo-400 font-mono font-bold mb-0.5">Cód: ${itemB.codigo}</div>
+                     <div class="font-medium text-gray-900 dark:text-gray-200">${itemB.descOriginal}</div>` 
+                    : '<span class="text-gray-300 dark:text-gray-600">-</span>';
+
                 tr.innerHTML = `
                     <td class="p-3 text-gray-500 dark:text-gray-400">${acoesA}</td>
-                    <td class="p-3 font-medium text-gray-900 dark:text-gray-200">${itemA ? itemA.descOriginal : '<span class="text-gray-300 dark:text-gray-600">-</span>'}</td>
+                    <td class="p-3">${descA}</td>
                     <td class="p-3 text-center text-gray-500 dark:text-gray-400">${itemA ? itemA.um : '-'}</td>
                     <td class="p-3 text-right font-bold text-gray-900 dark:text-gray-200 border-r border-gray-200 dark:border-gray-800">${itemA ? itemA.qtd : '-'}</td>
 
                     <td class="p-3 text-center bg-gray-50 dark:bg-gray-800/30 border-r border-gray-200 dark:border-gray-800">${statusHtml}</td>
 
                     <td class="p-3 text-gray-500 dark:text-gray-400">${acoesB}</td>
-                    <td class="p-3 font-medium text-gray-900 dark:text-gray-200">${itemB ? itemB.descOriginal : '<span class="text-gray-300 dark:text-gray-600">-</span>'}</td>
+                    <td class="p-3">${descB}</td>
                     <td class="p-3 text-center text-gray-500 dark:text-gray-400">${itemB ? itemB.um : '-'}</td>
                     <td class="p-3 text-right font-bold text-gray-900 dark:text-gray-200">${itemB ? itemB.qtd : '-'}</td>
                 `;
@@ -711,21 +841,35 @@
         function restaurarExclusao(item, lado) { exclusoes[lado] = exclusoes[lado].filter(i => i !== item); localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes)); renderizarListaExclusoes(); }
         function limparTodaMemoria() { if(confirm("Apagar TODAS as memórias de correlação e exclusão?")) { dicionarioMescla = {}; exclusoes = { A: [], B: [] }; localStorage.clear(); renderizarRegrasMescla(); renderizarListaExclusoes(); } }
 
-        // --- ARQUIVOS ---
-        document.getElementById('fileA').addEventListener('change', e => lerArquivoExcel(e.target.files[0], data => dadosRawA = data));
-        document.getElementById('fileB').addEventListener('change', e => lerArquivoExcel(e.target.files[0], data => dadosRawB = data));
-        function lerArquivoExcel(file, callback) { const r = new FileReader(); r.onload = function(e) { const w = XLSX.read(new Uint8Array(e.target.result), {type: 'array'}); callback(XLSX.utils.sheet_to_json(w.Sheets[w.SheetNames[0]])); }; r.readAsArrayBuffer(file); }
+        // --- ARQUIVOS (Onde a IA começa a ler) ---
+        document.getElementById('fileA').addEventListener('change', e => lerArquivoExcel(e.target.files[0], 'A'));
+        document.getElementById('fileB').addEventListener('change', e => lerArquivoExcel(e.target.files[0], 'B'));
+        
+        function lerArquivoExcel(file, idLado) { 
+            const r = new FileReader(); 
+            r.onload = function(e) { 
+                const w = XLSX.read(new Uint8Array(e.target.result), {type: 'array'}); 
+                const rows = XLSX.utils.sheet_to_json(w.Sheets[w.SheetNames[0]], {header: 1, defval: ""});
+                
+                let dadosPadronizados = classificarEExtrairDados(rows, idLado);
+                if (idLado === 'A') dadosRawA = dadosPadronizados;
+                else dadosRawB = dadosPadronizados;
+            }; 
+            r.readAsArrayBuffer(file); 
+        }
 
         // --- TESTE ---
         function carregarDadosTeste() {
             dadosRawA = [ 
-                { Codigo: "101", Descricao: "Oleo Lubrificante Diesel", UM: "LT", Quantidade: 10 }, 
-                { Codigo: "105", Descricao: "Oleo Lubr Diesel", UM: "LT", Quantidade: 2 }, // A IA vai unir com o 101 e concatenar o código
-                { Codigo: "102", Descricao: "Adubo Especial Lado Esquerdo", UM: "KG", Quantidade: 5 } 
+                { codigo: "101", descOriginal: "Oleo Lubrificante Diesel", um: "LT", qtdRaw: 10 }, 
+                { codigo: "105", descOriginal: "Oleo Lubr Diesel", um: "LT", qtdRaw: 2 },
+                { codigo: "102", descOriginal: "Adubo Especial Lado Esquerdo", um: "KG", qtdRaw: 5 },
+                { codigo: "-", descOriginal: "Produto Sem Codigo", um: "CX", qtdRaw: 50 }
             ];
             dadosRawB = [ 
-                { Codigo: "201", Descricao: "OLEO LUBRIFICANTE", UM: "LT", Quantidade: 12 }, 
-                { Codigo: "103", Descricao: "Adubo Esp Lado Direito", UM: "KG", Quantidade: 5 } 
+                { codigo: "201", descOriginal: "OLEO LUBRIFICANTE", um: "LT", qtdRaw: 12 }, 
+                { codigo: "103", descOriginal: "Adubo Esp Lado Direito", um: "KG", qtdRaw: 5 },
+                { codigo: "999", descOriginal: "Produto Sem Codigo", um: "CX", qtdRaw: 50 }
             ];
             iniciarCruzamento();
         }
