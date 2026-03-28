@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conciliador de Estoque PRO v8</title>
-    <!-- Script para carregar o tema imediatamente e evitar "piscar" branco ao abrir a página -->
+    <title>Conciliador de Estoque PRO v8.5</title>
+    <!-- Script para carregar o tema imediatamente -->
     <script>
         if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
@@ -12,64 +12,34 @@
             document.documentElement.classList.remove('dark');
         }
     </script>
-    <!-- 1. Carrega a Biblioteca Primeiro -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Biblioteca XLSX (SheetJS) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
-    <!-- 2. Ativa o Modo Escuro Manualmente -->
     <script>
         tailwind.config = { darkMode: 'class' };
     </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; padding-bottom: 60px; }
-        
-        /* Tabela Responsiva e Sticky Header */
         .table-container { max-width: 100vw; overflow-x: auto; -webkit-overflow-scrolling: touch; }
         th { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(8px); }
-        
-        /* Badges Modernos Light */
         .badge { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; transition: all 0.3s; }
         .badge-ok { background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
         .badge-sobra { background-color: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
         .badge-falta { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-
-        /* Badges Modernos Dark (Néon suave) */
         .dark .badge-ok { background-color: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
         .dark .badge-sobra { background-color: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
         .dark .badge-falta { background-color: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
-
-        /* Botões de Ação */
         .btn-acao { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 0.375rem; transition: all 0.2s; cursor: pointer; border: 1px solid transparent; }
-        
         .light .btn-acao { color: #64748b; }
         .light .btn-acao:hover { background-color: #f1f5f9; color: #0f172a; }
-        .light .btn-link:hover { color: #4f46e5; background-color: #e0e7ff; }
-        .light .btn-del:hover { color: #ef4444; background-color: #fee2e2; }
-
         .dark .btn-acao { color: #94a3b8; }
         .dark .btn-acao:hover { background-color: #334155; color: #f8fafc; }
-        .dark .btn-link:hover { color: #818cf8; background-color: rgba(79, 70, 229, 0.3); }
-        .dark .btn-del:hover { color: #f87171; background-color: rgba(239, 68, 68, 0.2); }
-
         .linha-selecionada { outline: 2px solid #6366f1; z-index: 5; position: relative; }
-        .light .linha-selecionada { background-color: #e0e7ff !important; }
-        .dark .linha-selecionada { background-color: rgba(79, 70, 229, 0.2) !important; }
-        
-        /* Efeito de Clique nos Cards (Filtro) */
         .card-kpi { cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .card-kpi:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-        .card-kpi:active { transform: translateY(0); }
-        
-        /* Scrollbar Elegante */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
-        .dark ::-webkit-scrollbar-thumb { background: #475569; border: 2px solid transparent; background-clip: padding-box; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        .dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
@@ -81,7 +51,7 @@
         <header class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 flex flex-col md:flex-row justify-between items-center gap-4 transition-colors duration-300">
             <div class="flex items-center gap-4">
                 <div class="bg-indigo-600 dark:bg-indigo-500 p-2.5 rounded-xl text-white shadow-lg shadow-indigo-500/30">
-                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
                 </div>
                 <div>
                     <h1 class="text-xl md:text-2xl font-bold tracking-tight text-slate-900 dark:text-white transition-colors duration-300">Conciliador PRO</h1>
@@ -89,18 +59,12 @@
                 </div>
             </div>
             <div class="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scroll">
-                <button onclick="toggleDarkMode()" class="px-3 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-300 flex items-center justify-center" title="Alternar Tema">
-                    <svg id="icon-sun" class="w-5 h-5 hidden dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                    <svg id="icon-moon" class="w-5 h-5 block dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                <button onclick="toggleDarkMode()" class="px-3 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-300 flex items-center justify-center">
+                    <svg id="icon-sun" class="w-5 h-5 hidden dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                    <svg id="icon-moon" class="w-5 h-5 block dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
                 </button>
-                <button onclick="abrirManual()" class="px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-all duration-300 shadow-sm text-sm flex items-center justify-center gap-2 whitespace-nowrap">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                    Manual
-                </button>
-                <button onclick="abrirGerenciador()" class="px-4 py-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 font-semibold rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-all duration-300 shadow-sm text-sm flex items-center justify-center gap-2 whitespace-nowrap">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                    Memória de Regras
-                </button>
+                <button onclick="abrirManual()" class="px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition shadow-sm text-sm flex items-center justify-center gap-2">Manual</button>
+                <button onclick="abrirGerenciador()" class="px-4 py-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 font-semibold rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition shadow-sm text-sm flex items-center justify-center gap-2 whitespace-nowrap">Memória / Backup</button>
             </div>
         </header>
 
@@ -110,253 +74,215 @@
                     <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                         <span class="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span> Estoque A (Sistema 1)
                     </label>
-                    <div class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors duration-300">
-                        <input type="file" id="fileA" accept=".xlsx, .xls, .csv" class="w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 dark:file:bg-emerald-500/10 file:text-emerald-700 dark:file:text-emerald-400 hover:file:bg-emerald-100 dark:hover:file:bg-emerald-500/20 cursor-pointer outline-none transition-colors duration-300"/>
+                    <div id="dropA" class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-3 hover:bg-slate-50 dark:hover:bg-indigo-900/10 transition-colors duration-300 relative text-slate-400">
+                        <input type="file" id="fileA" accept=".xlsx, .xls, .csv" class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 dark:file:bg-emerald-900/30 dark:file:text-emerald-400 cursor-pointer outline-none transition-all"/>
+                        <div id="loadingA" class="hidden absolute inset-0 bg-white/80 dark:bg-slate-900/80 flex items-center justify-center rounded-xl z-10 font-bold text-indigo-600">Lendo Arquivo...</div>
                     </div>
                 </div>
                 <div>
                     <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                         <span class="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]"></span> Estoque B (Sistema 2)
                     </label>
-                    <div class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors duration-300">
-                        <input type="file" id="fileB" accept=".xlsx, .xls, .csv" class="w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-500/10 file:text-blue-700 dark:file:text-blue-400 hover:file:bg-blue-100 dark:hover:file:bg-blue-500/20 cursor-pointer outline-none transition-colors duration-300"/>
+                    <div id="dropB" class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-3 hover:bg-slate-50 dark:hover:bg-indigo-900/10 transition-colors duration-300 relative text-slate-400">
+                        <input type="file" id="fileB" accept=".xlsx, .xls, .csv" class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900/30 dark:file:text-blue-400 cursor-pointer outline-none transition-all"/>
+                        <div id="loadingB" class="hidden absolute inset-0 bg-white/80 dark:bg-slate-900/80 flex items-center justify-center rounded-xl z-10 font-bold text-indigo-600">Lendo Arquivo...</div>
                     </div>
                 </div>
             </div>
 
-            <div class="flex flex-col sm:flex-row gap-3">
-                <button id="btnProcessar" onclick="iniciarCruzamento()" class="flex-1 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white font-semibold py-3.5 px-6 rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-2">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+            <div class="flex flex-wrap gap-3">
+                <button id="btnProcessar" onclick="iniciarCruzamento()" class="flex-1 min-w-[200px] bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white font-semibold py-3.5 px-6 rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-2">
                     Processar Auditoria
                 </button>
-                <button onclick="buscarSugestoesIA()" id="btnIA" class="hidden flex-1 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 hover:bg-amber-100 dark:hover:bg-amber-500/20 font-semibold py-3.5 px-6 rounded-xl shadow-sm transition-all duration-300 flex items-center justify-center gap-2">
-                    <svg class="w-5 h-5 text-amber-500 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                <button onclick="buscarSugestoesIA()" id="btnIA" class="hidden min-w-[200px] bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 hover:bg-amber-100 font-semibold py-3.5 px-6 rounded-xl shadow-sm transition-all duration-300 flex items-center justify-center gap-2">
                     Buscar Similares via IA
+                </button>
+                <button id="btnExportExcel" onclick="exportarExcelResultado()" class="hidden min-w-[200px] bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 px-6 rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-2">
+                    Baixar Relatório (.xlsx)
                 </button>
             </div>
         </div>
 
         <div id="areaTabela" class="hidden">
             <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
-                <div id="card-all" onclick="aplicarFiltro('all')" class="card-kpi ring-2 ring-indigo-500 dark:ring-indigo-400 scale-105 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex flex-col justify-center transition-colors duration-300">
-                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total</span>
-                    <span class="text-2xl font-bold text-slate-900 dark:text-white mt-1" id="kpiTotal">0</span>
+                <div id="card-all" onclick="aplicarFiltro('all')" class="card-kpi ring-2 ring-indigo-500 scale-105 bg-white dark:bg-slate-800 rounded-xl p-4 flex flex-col justify-center transition-colors">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Pesquisa</span>
+                    <span class="text-2xl font-bold mt-1 text-slate-900 dark:text-white" id="kpiTotal">0</span>
                 </div>
-                <div id="card-ok" onclick="aplicarFiltro('ok')" class="card-kpi bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-xl p-4 flex flex-col justify-center transition-colors duration-300" title="Ver apenas os que bateram">
+                <div id="card-ok" onclick="aplicarFiltro('ok')" class="card-kpi bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-800 rounded-xl p-4 flex flex-col justify-center transition-colors">
                     <span class="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Bateu (OK)</span>
                     <span class="text-2xl font-bold text-emerald-700 dark:text-emerald-400 mt-1" id="kpiOk">0</span>
                 </div>
-                <div id="card-div" onclick="aplicarFiltro('div')" class="card-kpi bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 rounded-xl p-4 flex flex-col justify-center transition-colors duration-300" title="Ver apenas as divergências">
+                <div id="card-div" onclick="aplicarFiltro('div')" class="card-kpi bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-800 rounded-xl p-4 flex flex-col justify-center transition-colors">
                     <span class="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Divergências</span>
                     <span class="text-2xl font-bold text-amber-700 dark:text-amber-400 mt-1" id="kpiDiv">0</span>
                 </div>
-                <div id="card-soa" onclick="aplicarFiltro('soa')" class="card-kpi bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-xl p-4 flex flex-col justify-center transition-colors duration-300" title="Ver o que sobrou no Lado A">
+                <div id="card-soa" onclick="aplicarFiltro('soa')" class="card-kpi bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-800 rounded-xl p-4 flex flex-col justify-center transition-colors">
                     <span class="text-xs font-semibold text-rose-700 dark:text-rose-400 uppercase tracking-wider">Só no A</span>
                     <span class="text-2xl font-bold text-rose-700 dark:text-rose-400 mt-1" id="kpiSoA">0</span>
                 </div>
-                <div id="card-sob" onclick="aplicarFiltro('sob')" class="card-kpi bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-xl p-4 flex flex-col justify-center transition-colors duration-300" title="Ver o que sobrou no Lado B">
+                <div id="card-sob" onclick="aplicarFiltro('sob')" class="card-kpi bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-800 rounded-xl p-4 flex flex-col justify-center transition-colors">
                     <span class="text-xs font-semibold text-rose-700 dark:text-rose-400 uppercase tracking-wider">Só no B</span>
                     <span class="text-2xl font-bold text-rose-700 dark:text-rose-400 mt-1" id="kpiSoB">0</span>
                 </div>
             </div>
 
-            <div class="table-container bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-colors duration-300 rounded-xl">
+            <div class="mb-4">
+                <input type="text" id="inputBusca" oninput="debounceBusca()" placeholder="Pesquisar por nome ou código..." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-5 py-3 outline-none focus:ring-2 focus:ring-indigo-500 transition-all dark:text-white">
+            </div>
+
+            <div class="table-container bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-colors rounded-xl">
                 <table class="w-full text-sm text-left min-w-[700px]" id="tabelaPrincipal">
                     <thead>
-                        <tr class="border-b border-slate-200 dark:border-slate-800">
-                            <th colspan="4" class="p-3 text-center text-slate-800 dark:text-slate-200 font-bold border-r border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 transition-colors duration-300">
-                                <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-2 shadow-[0_0_6px_rgba(16,185,129,0.8)]"></span> LADO A
-                            </th>
-                            <th class="p-3 text-center text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest bg-slate-100 dark:bg-slate-800 w-24 border-r border-slate-200 dark:border-slate-800 transition-colors duration-300">Status</th>
-                            <th colspan="4" class="p-3 text-center text-slate-800 dark:text-slate-200 font-bold bg-slate-50 dark:bg-slate-800/50 transition-colors duration-300">
-                                <span class="w-2 h-2 rounded-full bg-blue-500 inline-block mr-2 shadow-[0_0_6px_rgba(59,130,246,0.8)]"></span> LADO B
-                            </th>
+                        <tr class="border-b border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200">
+                            <th colspan="4" class="p-3 text-center font-bold border-r border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">LADO A</th>
+                            <th class="p-3 text-center text-slate-500 dark:text-slate-400 text-xs font-bold uppercase w-24 border-r border-slate-200 dark:border-slate-800">Status</th>
+                            <th colspan="4" class="p-3 text-center font-bold bg-slate-50 dark:bg-slate-800/50">LADO B</th>
                         </tr>
-                        <tr class="text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider border-b-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 transition-colors duration-300">
+                        <tr class="text-slate-500 dark:text-slate-400 text-xs uppercase border-b-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
                             <th class="p-3 w-12 text-center whitespace-nowrap">Ações</th>
                             <th class="p-3 w-[30%]">Produto (A)</th>
-                            <th class="p-3 w-10 text-center whitespace-nowrap">UM</th>
-                            <th class="p-3 w-16 text-right border-r border-slate-200 dark:border-slate-800 whitespace-nowrap">Qtd</th>
-                            
-                            <th class="p-3 w-24 text-center bg-slate-50 dark:bg-slate-800/30 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap">Resultado</th>
-                            
-                            <th class="p-3 w-12 text-center whitespace-nowrap">Ações</th>
+                            <th class="p-3 w-10 text-center">UM</th>
+                            <th class="p-3 w-16 text-right border-r">Qtd</th>
+                            <th class="p-3 w-24 text-center bg-slate-50 dark:bg-slate-800/30 border-r">Resultado</th>
+                            <th class="p-3 w-12 text-center">Ações</th>
                             <th class="p-3 w-[30%]">Produto (B)</th>
-                            <th class="p-3 w-10 text-center whitespace-nowrap">UM</th>
-                            <th class="p-3 w-16 text-right whitespace-nowrap">Qtd</th>
+                            <th class="p-3 w-10 text-center">UM</th>
+                            <th class="p-3 w-16 text-right">Qtd</th>
                         </tr>
                     </thead>
-                    <tbody id="tbodyMatriz" class="divide-y divide-slate-100 dark:divide-slate-800 transition-colors duration-300"></tbody>
+                    <tbody id="tbodyMatriz" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <div id="barraCorrelação" class="fixed top-6 left-1/2 transform -translate-x-1/2 -translate-y-24 opacity-0 bg-slate-900 dark:bg-indigo-900 text-white px-6 py-4 rounded-xl shadow-2xl transition-all duration-300 z-50 flex items-center gap-4 border border-slate-700 dark:border-indigo-700 pointer-events-none">
-        <div class="bg-indigo-500/20 p-2 rounded-full">
-            <svg class="w-6 h-6 text-indigo-400 dark:text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
-        </div>
-        <div>
-            <p class="font-bold text-sm">Selecione o par para:</p>
-            <p class="text-indigo-300 dark:text-indigo-200 font-mono text-xs mt-0.5 truncate max-w-[250px]" id="nomeSelecionado"></p>
-        </div>
-        <button onclick="cancelarCorrelação()" class="ml-4 bg-slate-700 dark:bg-indigo-800 hover:bg-slate-600 dark:hover:bg-indigo-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg pointer-events-auto transition-colors duration-300">
-            Cancelar
-        </button>
-    </div>
-
-    <div id="toastNotificacao" class="fixed top-6 right-6 transform translate-x-full opacity-0 bg-slate-900 dark:bg-indigo-900 text-white px-6 py-4 rounded-xl shadow-2xl transition-all duration-500 z-50 flex items-center gap-3 border border-slate-700 dark:border-indigo-700">
-        <span class="text-2xl">🤖</span>
-        <div>
-            <p class="font-bold text-sm" id="toastTitulo">Aviso</p>
-            <p class="text-indigo-300 dark:text-indigo-200 text-xs mt-0.5 max-w-[200px]" id="toastMsg">Mensagem aqui</p>
-        </div>
-    </div>
-
+    <!-- MODAL DO MANUAL DETALHADO -->
     <div id="manualModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 transition-opacity">
-        <div class="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl shadow-xl max-w-4xl w-full flex flex-col h-[90vh] border border-slate-100 dark:border-slate-800 transition-colors duration-300">
-            <div class="flex justify-between items-center mb-4 border-b border-slate-200 dark:border-slate-800 pb-4">
-                <h3 class="text-xl md:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2 transition-colors">
-                    <svg class="w-6 h-6 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                    Manual do Utilizador
-                </h3>
-                <button onclick="fecharManual()" class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg p-2 transition-colors duration-300">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
+        <div class="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl shadow-xl max-w-4xl w-full flex flex-col h-[90vh] border border-slate-100 dark:border-slate-800 transition-colors">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-200 dark:border-slate-800 pb-4 text-indigo-600 dark:text-indigo-400">
+                <h3 class="text-xl md:text-2xl font-bold flex items-center gap-2">Guia de Operação Estratégica</h3>
+                <button onclick="fecharManual()" class="text-slate-400 hover:text-slate-600 bg-slate-100 dark:bg-slate-800 p-2 rounded-lg">✕</button>
             </div>
-            <div class="overflow-y-auto flex-1 pr-2 space-y-6 text-slate-700 dark:text-slate-300 text-sm md:text-base leading-relaxed transition-colors">
-                <p>Bem-vindo ao <strong>Conciliador de Estoque PRO</strong>. Este sistema audita, limpa e cruza dados de duas fontes de stock diferentes de forma instantânea.</p>
-                <section><h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2">1. Preparação</h4><p>Aceitamos <code>.xlsx</code>, <code>.xls</code> ou <code>.csv</code>. Sem cabeçalhos? A nossa IA heurística fará a leitura matemática dos dados automaticamente.</p></section>
-                <section><h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2">2. Filtros e Dashboard</h4><p>Os cinco cartões no topo funcionam como filtros interativos. Clique neles para isolar dados na tabela.</p></section>
+            <div class="overflow-y-auto flex-1 pr-2 space-y-6 text-slate-700 dark:text-slate-300 text-sm md:text-base leading-relaxed">
+                <section>
+                    <h4 class="font-bold text-slate-900 dark:text-white">1. 🤖 Motor de IA Heurística</h4>
+                    <p>O sistema processa dados mesmo sem cabeçalhos. Ele analisa matematicamente as primeiras 30 linhas:</p>
+                    <ul class="list-disc pl-5 mt-2 space-y-1">
+                        <li><strong>Quantidade:</strong> Identificada por valores decimais (ex: 573.00).</li>
+                        <li><strong>Descrição:</strong> Identificada por densidade de texto e presença de espaços.</li>
+                        <li><strong>Código:</strong> Identificado por zeros à esquerda ou cadeias alfanuméricas sem espaços.</li>
+                    </ul>
+                </section>
+                <section>
+                    <h4 class="font-bold text-slate-900 dark:text-white">2. ⚡ Processamento ETL de Alta Precisão</h4>
+                    <p>Antes do cruzamento, o motor realiza uma limpeza cirúrgica: Normaliza textos (remove acentos), elimina espaços duplos e ignora linhas vazias ou "fantasmas".</p>
+                </section>
+                <section>
+                    <h4 class="font-bold text-slate-900 dark:text-white">3. 📊 Dashboard e Filtros Dinâmicos</h4>
+                    <p>Os contadores e cartões superiores são vivos. Eles atualizam conforme você pesquisa ou altera o status da auditoria, permitindo focar em Divergências ou Furos de Estoque.</p>
+                </section>
+                <section>
+                    <h4 class="font-bold text-slate-900 dark:text-white">4. 🔗 Uniões e Rastreabilidade</h4>
+                    <p>O sistema concatena os códigos de produtos unidos (ex: `101 / 205`) e grava essas regras para sempre, eliminando o retrabalho em auditorias futuras.</p>
+                </section>
+                <section>
+                    <h4 class="font-bold text-slate-900 dark:text-white">5. 🧠 Memória JSON e Portabilidade</h4>
+                    <p>Toda a inteligência gerada pode ser exportada em um arquivo .JSON. Isso permite compartilhar as regras com toda a equipe ou migrar de computador sem perder nada.</p>
+                </section>
+                <section>
+                    <h4 class="font-bold text-slate-900 dark:text-white">6. 📥 Relatórios Executivos</h4>
+                    <p>Ao finalizar, o botão <strong>Baixar Relatório (.xlsx)</strong> gera uma nova planilha respeitando seus filtros ativos e calculando automaticamente a coluna de Diferença.</p>
+                </section>
             </div>
-            <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end transition-colors">
-                <button onclick="fecharManual()" class="bg-indigo-600 text-white px-8 py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition shadow">Entendi, fechar!</button>
-            </div>
+            <div class="mt-6 flex justify-end"><button onclick="fecharManual()" class="bg-indigo-600 text-white px-8 py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition">Fechar Guia</button></div>
         </div>
     </div>
 
+    <!-- MODAL MEMORIA -->
     <div id="regrasModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-xl max-w-4xl w-full flex flex-col h-[85vh] border border-slate-100 dark:border-slate-800 transition-colors duration-300">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                <div><h3 class="text-xl font-bold text-slate-900 dark:text-white transition-colors">Memória de Aprendizado</h3></div>
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-xl max-w-4xl w-full h-[85vh] flex flex-col border border-slate-100 dark:border-slate-800">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Gestão de Memória</h3>
                 <div class="flex gap-2">
-                    <button onclick="exportarBackup()" class="text-xs bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 px-3 py-2 rounded-lg font-semibold border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">Exportar Backup</button>
-                    <button onclick="document.getElementById('fileImportBackup').click()" class="text-xs bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 px-3 py-2 rounded-lg font-semibold border border-blue-200 dark:border-blue-800 flex items-center gap-1">Importar Backup</button>
-                    <button onclick="limparTodaMemoria()" class="text-xs bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 px-3 py-2 rounded-lg font-semibold border border-red-200 dark:border-red-800">Zerar</button>
+                    <button onclick="exportarBackup()" class="text-xs bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 px-3 py-1 rounded font-bold border border-emerald-200">Exportar .JSON</button>
+                    <button onclick="document.getElementById('fileImportBackup').click()" class="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 px-3 py-1 rounded font-bold border border-blue-200">Importar .JSON</button>
                 </div>
             </div>
-            <div class="flex gap-2 mb-4 border-b border-slate-200 dark:border-slate-700 pb-2 transition-colors">
-                <button onclick="mudarAba('mesclas')" id="abaMesclas" class="px-4 py-2 text-sm font-semibold rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 transition-colors">Correlações</button>
-                <button onclick="mudarAba('exclusoes')" id="abaExclusoes" class="px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Exclusões</button>
+            <div class="flex gap-2 mb-4 border-b border-slate-200 dark:border-slate-800 pb-2">
+                <button onclick="mudarAba('mesclas')" id="abaMesclas" class="px-4 py-2 text-sm font-semibold rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700">Uniões</button>
+                <button onclick="mudarAba('exclusoes')" id="abaExclusoes" class="px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Lixeira</button>
             </div>
-            <div id="conteudoMesclas" class="overflow-y-auto flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 transition-colors">
-                <table class="w-full text-sm text-left"><tbody id="tbodyRegras" class="divide-y divide-slate-100 dark:divide-slate-700 transition-colors"></tbody></table>
+            <div id="conteudoMesclas" class="overflow-y-auto flex-1 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl border">
+                <table class="w-full text-sm text-left"><tbody id="tbodyRegras" class="divide-y"></tbody></table>
             </div>
             <div id="conteudoExclusoes" class="overflow-y-auto flex-1 hidden flex flex-col md:flex-row gap-4">
-                <div class="flex-1 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-800 transition-colors"><div class="bg-slate-50 dark:bg-slate-900 p-3 border-b border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-700 dark:text-slate-300">A - Excluídos</div><table class="w-full text-sm"><tbody id="tbodyExcluidosA" class="divide-y divide-slate-100 dark:divide-slate-700"></tbody></table></div>
-                <div class="flex-1 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-800 transition-colors"><div class="bg-slate-50 dark:bg-slate-900 p-3 border-b border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-700 dark:text-slate-300">B - Excluídos</div><table class="w-full text-sm"><tbody id="tbodyExcluidosB" class="divide-y divide-slate-100 dark:divide-slate-700"></tbody></table></div>
+                <div class="flex-1 border rounded-xl overflow-hidden bg-white dark:bg-slate-900"><div class="bg-slate-50 dark:bg-slate-900 p-2 border-b font-bold text-xs">Excluídos Lado A</div><table class="w-full text-sm"><tbody id="tbodyExcluidosA" class="divide-y"></tbody></table></div>
+                <div class="flex-1 border rounded-xl overflow-hidden bg-white dark:bg-slate-900"><div class="bg-slate-50 dark:bg-slate-900 p-2 border-b font-bold text-xs">Excluídos Lado B</div><table class="w-full text-sm"><tbody id="tbodyExcluidosB" class="divide-y"></tbody></table></div>
             </div>
-            <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end transition-colors">
-                <button onclick="fecharGerenciador()" class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition shadow">Concluir</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="aiModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 transition-opacity">
-        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-xl max-w-3xl w-full flex flex-col h-[80vh] border border-slate-100 dark:border-slate-800 transition-colors duration-300">
-            <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-1 transition-colors">Sugestões de IA</h3>
-            <div class="overflow-y-auto flex-1 space-y-3 pr-2" id="aiSugestoesLista"></div>
-            <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex gap-3 justify-end transition-colors">
-                <button onclick="fecharModalIA()" class="text-slate-600 dark:text-slate-400 px-4 py-2 rounded-xl font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Cancelar</button>
-                <button onclick="aplicarMesclasEmLote()" class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition shadow">Aplicar Selecionados</button>
+            <div class="mt-4 flex gap-3">
+                <button onclick="abrirConfirmacaoLimpeza()" class="text-xs bg-red-50 text-red-600 px-4 py-2 rounded-xl font-bold">Limpar Tudo</button>
+                <button onclick="fecharGerenciador()" class="flex-1 bg-indigo-600 text-white py-2 rounded-xl font-bold">Concluído</button>
             </div>
         </div>
     </div>
 
-    <svg style="display: none;">
-        <symbol id="icon-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></symbol>
-        <symbol id="icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></symbol>
-    </svg>
+    <!-- MODAL CONFIRMAÇÃO (CUSTOM) -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center z-[60] p-4">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-2xl max-w-sm w-full text-center border dark:border-slate-800">
+            <div class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">⚠️</div>
+            <h3 class="text-lg font-bold mb-2">Tem certeza?</h3>
+            <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Esta ação apagará permanentemente todas as memórias de união e exclusão. Não há como desfazer.</p>
+            <div class="flex gap-2">
+                <button onclick="fecharConfirmacao()" class="flex-1 bg-slate-100 dark:bg-slate-800 py-2 rounded-xl font-bold">Cancelar</button>
+                <button onclick="executarLimpezaTotal()" class="flex-1 bg-red-600 text-white py-2 rounded-xl font-bold">Sim, Apagar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL IA -->
+    <div id="aiModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-xl max-w-3xl w-full h-[80vh] flex flex-col border">
+            <h3 class="text-xl font-bold mb-4">Sugestões de IA</h3>
+            <div class="flex-1 overflow-y-auto space-y-3 pr-2" id="aiSugestoesLista"></div>
+            <div class="mt-4 flex gap-2"><button onclick="fecharModalIA()" class="flex-1 bg-slate-200 dark:bg-slate-800 rounded-xl py-2 font-bold">Cancelar</button><button onclick="aplicarMesclasEmLote()" class="flex-1 bg-indigo-600 text-white rounded-xl py-2 font-bold shadow-lg">Aplicar Selecionados</button></div>
+        </div>
+    </div>
+
+    <!-- Barra de Correlação Superior -->
+    <div id="barraCorrelação" class="fixed top-6 left-1/2 transform -translate-x-1/2 -translate-y-24 opacity-0 bg-slate-900 dark:bg-indigo-900 text-white px-6 py-4 rounded-xl shadow-2xl transition-all duration-300 z-50 flex items-center gap-4 border border-slate-700 pointer-events-none">
+        <div><p class="font-bold text-sm">Unir com qual produto?</p><p class="text-indigo-300 font-mono text-xs mt-0.5 truncate max-w-[250px]" id="nomeSelecionado"></p></div>
+        <button onclick="cancelarCorrelação()" class="ml-4 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold py-1.5 px-3 rounded-lg pointer-events-auto">Cancelar</button>
+    </div>
+
+    <!-- Toast Notificacao -->
+    <div id="toastNotificacao" class="fixed top-6 right-6 transform translate-x-full opacity-0 bg-slate-900 dark:bg-indigo-900 text-white px-6 py-4 rounded-xl shadow-2xl transition-all duration-500 z-50 flex items-center gap-3 border border-slate-700">
+        <span class="text-2xl">🤖</span>
+        <div><p class="font-bold text-sm" id="toastTitulo">Aviso</p><p class="text-indigo-300 text-xs mt-0.5 max-w-[200px]" id="toastMsg"></p></div>
+    </div>
 
     <script>
+        // --- ESTADO E CONFIGURAÇÃO ---
+        let processedData = { dictA: {}, dictB: {}, listaFinal: [] };
+        let dadosRawA = []; let dadosRawB = [];
+        let dicionarioMescla = JSON.parse(localStorage.getItem('dicMesclaV6')) || {};
+        let exclusoes = JSON.parse(localStorage.getItem('exclusoesV6') || '{"A":[],"B":[]}');
+        const palavrasExcluidasFixas = ["BICO", "FILTRO"]; 
+        let produtoAguardandoCorrelacao = null; let idLinhaAguardando = null; let mesclasEmLote = {}; 
+        let filtroStatus = 'all'; let filtroBusca = '';
+
         function toggleDarkMode() {
             const html = document.documentElement;
             html.classList.toggle('dark');
-            if (html.classList.contains('dark')) localStorage.setItem('theme', 'dark');
-            else localStorage.setItem('theme', 'light');
+            localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
         }
 
-        // Função auxiliar para escapar aspas em nomes de produtos nos botões HTML
-        function esc(str) {
-            if (!str) return "";
-            return str.replace(/'/g, "\\'");
-        }
+        function esc(str) { return str ? str.replace(/'/g, "\\'") : ""; }
 
-        function exportarBackup() {
-            const dadosBackup = { dicionarioMescla: dicionarioMescla, exclusoes: exclusoes, dataExportacao: new Date().toISOString() };
-            const jsonString = JSON.stringify(dadosBackup, null, 2);
-            const blob = new Blob([jsonString], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Memoria_Conciliador_${new Date().toISOString().slice(0,10)}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        function processarImportacaoBackup(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    if(data.dicionarioMescla && data.exclusoes) {
-                        dicionarioMescla = data.dicionarioMescla;
-                        exclusoes = data.exclusoes;
-                        localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla));
-                        localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes));
-                        alert("✅ Documento de Memória importado com sucesso!");
-                        renderizarRegrasMescla(); renderizarListaExclusoes(); iniciarCruzamento();
-                    } else { alert("❌ Arquivo JSON inválido ou corrompido."); }
-                } catch (err) { alert("❌ Erro ao ler o arquivo: " + err.message); }
-            };
-            reader.readAsText(file);
-            event.target.value = ''; 
-        }
-
-        let dadosRawA = [];
-        let dadosRawB = [];
-        let dicionarioMescla = JSON.parse(localStorage.getItem('dicMesclaV6')) || {};
-        
-        // 🟢 CORREÇÃO: Inicialização segura da memória de exclusões (Garante o formato objeto A/B)
-        let rawExcl = localStorage.getItem('exclusoesV6');
-        let exclusoes = { A: [], B: [] };
-        if (rawExcl) {
-            try {
-                let p = JSON.parse(rawExcl);
-                if (p.A && p.B) exclusoes = p;
-            } catch(e) {}
-        }
-
-        const palavrasExcluidasFixas = ["BICO", "FILTRO"]; 
-        let produtoAguardandoCorrelacao = null; let idLinhaAguardando = null; let mesclasEmLote = {}; let filtroAtual = 'all';
-
-        function normalizarTexto(texto) {
-            if (!texto) return "";
-            return String(texto).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim().replace(/\s+/g, ' ');
-        }
-        function normalizarNumero(valor) {
-            if (!valor) return 0;
-            let n = +parseFloat(valor).toFixed(3);
-            return isNaN(n) ? 0 : n;
-        }
-        function mostrarNotificacao(titulo, mensagem) {
-            let toast = document.getElementById('toastNotificacao');
-            document.getElementById('toastTitulo').innerText = titulo;
-            document.getElementById('toastMsg').innerText = mensagem;
-            toast.classList.remove('translate-x-full', 'opacity-0');
-            setTimeout(() => toast.classList.add('translate-x-full', 'opacity-0'), 5000);
+        function aplicarDicionario(nomeNormalizado) {
+            let atual = nomeNormalizado; let maxLoops = 10;
+            while (dicionarioMescla[atual] && maxLoops > 0) { atual = dicionarioMescla[atual]; maxLoops--; }
+            return atual;
         }
 
         function calcularSimilaridade(s1, s2) {
@@ -365,89 +291,68 @@
             let bigrams1 = new Map();
             for (let i = 0; i < s1.length - 1; i++) { const big = s1.substr(i, 2); bigrams1.set(big, (bigrams1.get(big) || 0) + 1); }
             let intersection = 0;
-            for (let i = 0; i < s2.length - 1; i++) {
-                const big = s2.substr(i, 2); const count = bigrams1.get(big);
-                if (count > 0) { intersection++; bigrams1.set(big, count - 1); }
-            }
+            for (let i = 0; i < s2.length - 1; i++) { const big = s2.substr(i, 2); const count = bigrams1.get(big); if (count > 0) { intersection++; bigrams1.set(big, count - 1); } }
             return (2.0 * intersection) / (s1.length + s2.length - 2);
         }
 
-        function aplicarDicionario(nomeNormalizado) {
-            let atual = nomeNormalizado; let maxLoops = 10;
-            while (dicionarioMescla[atual] && maxLoops > 0) { atual = dicionarioMescla[atual]; maxLoops--; }
-            return atual;
+        function normalizarTexto(texto) { if (!texto) return ""; return String(texto).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim().replace(/\s+/g, ' '); }
+        function normalizarNumero(valor) { if (!valor) return 0; let n = +parseFloat(String(valor).replace(',', '.')).toFixed(3); return isNaN(n) ? 0 : n; }
+        
+        function mostrarNotificacao(titulo, mensagem) {
+            let toast = document.getElementById('toastNotificacao');
+            document.getElementById('toastTitulo').innerText = titulo; document.getElementById('toastMsg').innerText = mensagem;
+            toast.classList.remove('translate-x-full', 'opacity-0');
+            setTimeout(() => toast.classList.add('translate-x-full', 'opacity-0'), 5000);
         }
 
+        // --- MOTOR DE LEITURA (IA PONTUAÇÃO) ---
         function classificarEExtrairDados(rows, idLado) {
             if (rows.length === 0) return [];
-            let headerRowIndex = -1;
-            let map = { cod: -1, desc: -1, qtd: -1, um: -1 };
-
+            let headerRowIndex = -1; let map = { cod: -1, desc: -1, qtd: -1, um: -1 };
+            
             for (let i = 0; i < Math.min(10, rows.length); i++) {
-                let linha = rows[i];
-                if (!linha || !Array.isArray(linha)) continue;
-
-                let m = { cod: -1, desc: -1, qtd: -1, um: -1 };
+                let linha = rows[i]; if (!linha || !Array.isArray(linha)) continue;
                 linha.forEach((val, cIdx) => {
-                    if (!val) return;
-                    let v = String(val).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
-                    if (v.includes("cod") || v.includes("sku") || v.includes("ref") || v === "id") m.cod = cIdx;
-                    else if (v.includes("desc") || v.includes("prod") || v.includes("nome") || v.includes("mat")) m.desc = cIdx;
-                    else if (v.includes("qtd") || v.includes("quant") || v.includes("saldo") || v.includes("est")) m.qtd = cIdx;
-                    else if (v === "um" || v.includes("unid") || v.includes("medida")) m.um = cIdx;
+                    if (!val) return; let v = String(val).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+                    if (v.includes("cod") || v.includes("sku") || v.includes("ref") || v === "id") map.cod = cIdx;
+                    else if (v.includes("desc") || v.includes("prod") || v.includes("nome") || v.includes("mat")) map.desc = cIdx;
+                    else if (v.includes("qtd") || v.includes("quant") || v.includes("saldo") || v.includes("est")) map.qtd = cIdx;
+                    else if (v === "um" || v.includes("unid") || v.includes("medida")) map.um = cIdx;
                 });
-                if (m.desc !== -1 && m.qtd !== -1) { headerRowIndex = i; map = m; break; }
+                if (map.desc !== -1 && map.qtd !== -1) { headerRowIndex = i; break; }
             }
-
-            let dataStartIndex = headerRowIndex !== -1 ? headerRowIndex + 1 : 0;
 
             if (headerRowIndex === -1) {
                 let numCols = rows.reduce((max, r) => Math.max(max, r.length || 0), 0);
-                if (numCols === 0) return [];
-                let pts = Array.from({length: numCols}, (_, c) => ({ col: c, pQtd: 0, pDesc: 0, pUM: 0, pCod: 0 }));
+                let pts = Array.from({length: numCols}, (_, c) => ({ col: c, q: 0, d: 0, c: 0 }));
                 for (let i = 0; i < Math.min(30, rows.length); i++) {
-                    if (!rows[i]) continue;
-                    rows[i].forEach((val, c) => {
-                        if (c >= numCols || val === null || val === undefined) return;
-                        let str = String(val).trim();
-                        if (!str) return;
-                        let isNum = !isNaN(str.replace(',', '.'));
-                        let hasDecimal = str.includes('.') || str.includes(',');
-                        let hasLeadingZero = str.length > 1 && str.startsWith('0') && !hasDecimal;
-                        let hasLettersAndNums = /[a-zA-Z]/.test(str) && /\d/.test(str);
-                        if (isNum) {
-                            pts[c].pQtd += 2; 
-                            if (hasDecimal) { pts[c].pQtd += 50; pts[c].pCod -= 50; } 
-                            else if (hasLeadingZero) { pts[c].pCod += 50; pts[c].pQtd -= 50; } 
+                    rows[i]?.forEach((val, c) => {
+                        let s = String(val).trim(); if (!s) return;
+                        if (!isNaN(s.replace(',', '.'))) {
+                            if (s.includes('.') || s.includes(',')) pts[c].q += 50;
+                            else if (s.startsWith('0') && s.length > 1) pts[c].c += 40;
+                            else pts[c].q += 2;
                         } else {
-                            if (hasLettersAndNums && !str.includes(" ") && str.length <= 15) pts[c].pCod += 20;
-                            else if (str.length >= 2 && str.length <= 15 && !str.includes(" ")) pts[c].pCod += 3;
-                            if (str.length >= 1 && str.length <= 3 && /[a-zA-Z]/.test(str)) pts[c].pUM += 5; 
-                            if (str.length > 8 && str.includes(" ")) pts[c].pDesc += str.length; 
+                            if (s.length > 8 && s.includes(' ')) pts[c].d += s.length;
+                            if (s.length > 2 && s.length < 15 && !s.includes(' ')) pts[c].c += 10;
                         }
                     });
                 }
-                let descCol = pts.reduce((max, p) => p.pDesc > max.pDesc ? p : max, pts[0]).col;
-                let qtdC = pts.filter(p => p.col !== descCol);
-                let qtdCol = qtdC.length ? qtdC.reduce((max, p) => p.pQtd > max.pQtd ? p : max, qtdC[0]).col : -1;
-                let umC = pts.filter(p => p.col !== descCol && p.col !== qtdCol);
-                let umCol = umC.length ? umC.reduce((max, p) => p.pUM > max.pUM ? p : max, umC[0]).col : -1;
-                let codC = pts.filter(p => p.col !== descCol && p.col !== qtdCol && p.col !== umCol);
-                let codCol = codC.length ? codC.reduce((max, p) => p.pCod > max.pCod ? p : max, codC[0]).col : -1;
-                map = { cod: codCol, desc: descCol, qtd: qtdCol, um: umCol };
-                mostrarNotificacao(`Lado ${idLado}: IA Ativada!`, "Diferenciamos colunas pela lógica matemática.");
+                map.desc = pts.reduce((a, b) => a.d > b.d ? a : b).col;
+                map.qtd = pts.filter(p => p.col !== map.desc).reduce((a, b) => a.q > b.q ? a : b).col;
+                map.cod = pts.filter(p => p.col !== map.desc && p.col !== map.qtd).reduce((a, b) => a.c > b.c ? a : b).col;
+                mostrarNotificacao(`Lado ${idLado}: IA Ativa`, "Padrão de dados identificado sem cabeçalho.");
             }
 
             let extraido = [];
-            for (let i = dataStartIndex; i < rows.length; i++) {
-                let linha = rows[i];
-                if (!linha || !Array.isArray(linha) || linha.length === 0) continue;
+            for (let i = (headerRowIndex + 1); i < rows.length; i++) {
+                let linha = rows[i]; if (!linha || !Array.isArray(linha)) continue;
                 let original = map.desc !== -1 ? linha[map.desc] : "";
-                if (!original || String(original).trim() === "") continue; 
+                if (!original || String(original).trim().length < 2) continue; 
                 extraido.push({
                     codigo: map.cod !== -1 && linha[map.cod] !== undefined ? String(linha[map.cod]).trim() : "-",
                     descOriginal: String(original).trim(),
-                    um: map.um !== -1 ? String(linha[map.um]).trim().toUpperCase() : "UN",
+                    um: map.um !== -1 && linha[map.um] ? String(linha[map.um]).trim().toUpperCase() : "UN",
                     qtdRaw: map.qtd !== -1 ? linha[map.qtd] : 0
                 });
             }
@@ -457,230 +362,190 @@
         function estruturarLado(dadosPadronizados, idLado) {
             let mapa = {};
             dadosPadronizados.forEach(item => {
-                let normal = normalizarTexto(item.descOriginal); 
-                let qtd = normalizarNumero(item.qtdRaw);
+                let normal = normalizarTexto(item.descOriginal);
                 if (palavrasExcluidasFixas.some(p => normal.includes(p))) return;
-                
-                // 🟢 CORREÇÃO: Verificação de exclusão side-by-side acontece ANTES do mapeamento
                 let finalDesc = aplicarDicionario(normal);
                 if (exclusoes[idLado].includes(finalDesc)) return;
-
                 if (mapa[finalDesc]) { 
-                    mapa[finalDesc].qtd += qtd; 
-                    if (item.codigo !== "-") {
-                        let codigosSalvos = mapa[finalDesc].codigo.split(" / ");
-                        if (!codigosSalvos.includes(item.codigo)) mapa[finalDesc].codigo += " / " + item.codigo;
-                    }
-                } 
-                else { 
-                    mapa[finalDesc] = { codigo: item.codigo, descOriginal: item.descOriginal, um: item.um, qtd: qtd }; 
-                }
+                    mapa[finalDesc].qtd += normalizarNumero(item.qtdRaw);
+                    if (item.codigo !== "-" && !mapa[finalDesc].codigo.includes(item.codigo)) mapa[finalDesc].codigo += " / " + item.codigo;
+                } else { mapa[finalDesc] = { codigo: item.codigo, descOriginal: item.descOriginal, um: item.um, qtd: normalizarNumero(item.qtdRaw) }; }
             });
             return mapa;
         }
 
         function iniciarCruzamento() {
             if (dadosRawA.length === 0 && dadosRawB.length === 0) return;
-            const btn = document.getElementById('btnProcessar');
-            const original = btn.innerHTML;
-            btn.innerHTML = `Processando...`; btn.disabled = true;
+            const btn = document.getElementById('btnProcessar'); btn.innerHTML = `Limpando e Cruzando...`; btn.disabled = true;
             setTimeout(() => {
                 try {
-                    let dictA = estruturarLado(dadosRawA, 'A'); 
-                    let dictB = estruturarLado(dadosRawB, 'B');
-                    let auto = 0;
-                    Object.keys(dictA).forEach(itemA => {
-                        Object.keys(dictB).forEach(itemB => {
-                            if (!dicionarioMescla[itemA] && !dicionarioMescla[itemB] && calcularSimilaridade(itemA, itemB) >= 0.88) {
-                                dicionarioMescla[itemA] = itemB; auto++;
-                            }
-                        });
-                    });
-                    if (auto > 0) {
-                        localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla));
-                        dictA = estruturarLado(dadosRawA, 'A'); dictB = estruturarLado(dadosRawB, 'B');
-                    }
+                    let dictA = estruturarLado(dadosRawA, 'A'); let dictB = estruturarLado(dadosRawB, 'B');
+                    // IA Automática (Ajustada para 88% de rigor)
+                    Object.keys(dictA).forEach(itemA => { Object.keys(dictB).forEach(itemB => { if (!dicionarioMescla[itemA] && !dicionarioMescla[itemB] && calcularSimilaridade(itemA, itemB) >= 0.88) dicionarioMescla[itemA] = itemB; }); });
                     let todasChaves = new Set([...Object.keys(dictA), ...Object.keys(dictB)]);
-                    renderizarMatriz(Array.from(todasChaves).sort(), dictA, dictB);
+                    let listaFinal = Array.from(todasChaves).sort();
+                    processedData = { dictA, dictB, listaFinal };
+                    renderizarMatriz(listaFinal, dictA, dictB);
                     document.getElementById('btnIA').classList.remove('hidden');
-                } catch (e) { console.error(e); }
-                finally { btn.innerHTML = original; btn.disabled = false; }
+                    document.getElementById('btnExportExcel').classList.remove('hidden');
+                } catch (e) { console.error(e); } finally { btn.innerHTML = `Processar Auditoria`; btn.disabled = false; }
             }, 100);
         }
 
+        // --- RENDERIZADOR DINÂMICO COM KPIs DINÂMICOS ---
         function renderizarMatriz(listaOrdenada, dictA, dictB) {
-            const tbody = document.getElementById('tbodyMatriz');
-            tbody.innerHTML = '';
+            const tbody = document.getElementById('tbodyMatriz'); tbody.innerHTML = '';
             document.getElementById('areaTabela').classList.remove('hidden');
+            let cTotal = 0, cOk = 0, cDiv = 0, cSoA = 0, cSoB = 0;
 
-            let contOk = 0, contDiv = 0, contSoA = 0, contSoB = 0;
+            listaOrdenada.forEach((descFinal, idx) => {
+                let iA = dictA[descFinal]; let iB = dictB[descFinal];
+                const search = (iA?.descOriginal || "") + (iB?.descOriginal || "") + (iA?.codigo || "") + (iB?.codigo || "");
+                if (filtroBusca && !search.toUpperCase().includes(filtroBusca.toUpperCase())) return;
 
-            listaOrdenada.forEach((descFinal, index) => {
-                let itemA = dictA[descFinal]; let itemB = dictB[descFinal];
-                let qA = itemA ? itemA.qtd : 0; let qB = itemB ? itemB.qtd : 0;
+                let qA = iA ? iA.qtd : 0; let qB = iB ? iB.qtd : 0;
                 let diff = normalizarNumero(qA - qB);
-
-                let statusHtml = ""; let tipoStatus = "all";
-                if (diff === 0) { statusHtml = `<span class="badge badge-ok">Bateu</span>`; contOk++; tipoStatus = "ok"; }
-                else if (qA === 0) { statusHtml = `<span class="badge badge-falta">Só no B</span>`; contSoB++; tipoStatus = "sob"; }
-                else if (qB === 0) { statusHtml = `<span class="badge badge-sobra">Só no A</span>`; contSoA++; tipoStatus = "soa"; }
-                else if (diff > 0) { statusHtml = `<span class="badge badge-sobra">+${diff} no A</span>`; contDiv++; tipoStatus = "div"; }
-                else { statusHtml = `<span class="badge badge-falta">${Math.abs(diff)} no A</span>`; contDiv++; tipoStatus = "div"; }
+                let status = ""; let tp = "all";
+                if (diff === 0) { status = `<span class="badge badge-ok">Bateu</span>`; cOk++; tp = "ok"; }
+                else if (qA === 0) { status = `<span class="badge badge-falta">Só no B</span>`; cSoB++; tp = "sob"; }
+                else if (qB === 0) { status = `<span class="badge badge-sobra">Só no A</span>`; cSoA++; tp = "soa"; }
+                else { status = `<span class="badge badge-sobra">${Math.abs(diff)} no A</span>`; cDiv++; tp = "div"; }
+                cTotal++;
 
                 let tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors duration-300 row-item";
-                tr.setAttribute('data-status', tipoStatus);
+                tr.className = "hover:bg-slate-50 dark:hover:bg-slate-800/50 row-item transition-colors";
+                tr.setAttribute('data-status', tp); tr.id = `row-${idx}`;
                 
-                let iconLink = `<svg class="w-4 h-4"><use href="#icon-link"></use></svg>`;
-                let iconTrash = `<svg class="w-4 h-4"><use href="#icon-trash"></use></svg>`;
+                let acA = iA ? `<div class="flex gap-1 justify-center"><button onclick="cliqueBotaoCorrelacionar('${esc(descFinal)}', 'row-${idx}')" class="btn-acao">🔗</button><button onclick="excluirManual('${esc(descFinal)}', 'A')" class="btn-acao">🗑️</button></div>` : '';
+                let acB = iB ? `<div class="flex gap-1 justify-center"><button onclick="cliqueBotaoCorrelacionar('${esc(descFinal)}', 'row-${idx}')" class="btn-acao">🔗</button><button onclick="excluirManual('${esc(descFinal)}', 'B')" class="btn-acao">🗑️</button></div>` : '';
 
-                // 🟢 CORREÇÃO: Os botões de exclusão agora passam o lado ('A' ou 'B') e usam esc() para nomes complexos
-                let acoesA = itemA ? `<div class="flex gap-1 justify-center"><button onclick="cliqueBotaoCorrelacionar('${esc(descFinal)}', 'row-${index}')" class="btn-acao btn-link" title="Correlacionar">${iconLink}</button><button onclick="excluirManual('${esc(descFinal)}', 'A')" class="btn-acao btn-del" title="Excluir apenas do A">${iconTrash}</button></div>` : '';
-                let acoesB = itemB ? `<div class="flex gap-1 justify-center"><button onclick="cliqueBotaoCorrelacionar('${esc(descFinal)}', 'row-${index}')" class="btn-acao btn-link" title="Correlacionar">${iconLink}</button><button onclick="excluirManual('${esc(descFinal)}', 'B')" class="btn-acao btn-del" title="Excluir apenas do B">${iconTrash}</button></div>` : '';
-
-                tr.id = `row-${index}`;
-                tr.innerHTML = `
-                    <td class="p-3 whitespace-nowrap align-top">${acoesA}</td>
-                    <td class="p-3 align-top w-[30%] min-w-[150px]">${itemA ? `<div class="text-xs text-indigo-600 dark:text-indigo-400 font-mono font-bold mb-0.5">Cód: ${itemA.codigo}</div><div class="font-medium text-slate-900 dark:text-slate-200 whitespace-normal break-words">${itemA.descOriginal}</div>` : '<span class="text-slate-300 dark:text-slate-600">-</span>'}</td>
-                    <td class="p-3 text-center align-top">${itemA ? itemA.um : '-'}</td>
-                    <td class="p-3 text-right font-bold border-r border-slate-200 dark:border-slate-800 align-top">${itemA ? itemA.qtd : '-'}</td>
-                    <td class="p-3 text-center bg-slate-50 dark:bg-slate-800/30 border-r border-slate-200 dark:border-slate-800 align-top">${statusHtml}</td>
-                    <td class="p-3 whitespace-nowrap align-top">${acoesB}</td>
-                    <td class="p-3 align-top w-[30%] min-w-[150px]">${itemB ? `<div class="text-xs text-indigo-600 dark:text-indigo-400 font-mono font-bold mb-0.5">Cód: ${itemB.codigo}</div><div class="font-medium text-slate-900 dark:text-slate-200 whitespace-normal break-words">${itemB.descOriginal}</div>` : '<span class="text-slate-300 dark:text-slate-600">-</span>'}</td>
-                    <td class="p-3 text-center align-top">${itemB ? itemB.um : '-'}</td>
-                    <td class="p-3 text-right font-bold align-top">${itemB ? itemB.qtd : '-'}</td>
-                `;
+                tr.innerHTML = `<td class="p-3 align-top">${acA}</td><td class="p-3 align-top w-[30%] text-slate-800 dark:text-slate-200">${iA ? `<div class="text-xs text-indigo-600 dark:text-indigo-400 font-bold">Cód: ${iA.codigo}</div><div class="font-medium whitespace-normal break-words">${iA.descOriginal}</div>` : '-'}</td><td class="p-3 text-center align-top text-slate-500 dark:text-slate-400">${iA ? iA.um : '-'}</td><td class="p-3 text-right font-bold border-r border-slate-200 dark:border-slate-800 align-top">${iA ? iA.qtd : '-'}</td><td class="p-3 text-center bg-slate-50 dark:bg-slate-800/30 border-r border-slate-200 dark:border-slate-800 align-top">${status}</td><td class="p-3 align-top">${acB}</td><td class="p-3 align-top w-[30%] text-slate-800 dark:text-slate-200">${iB ? `<div class="text-xs text-indigo-600 dark:text-indigo-400 font-bold">Cód: ${iB.codigo}</div><div class="font-medium whitespace-normal break-words">${iB.descOriginal}</div>` : '-'}</td><td class="p-3 text-center align-top text-slate-500 dark:text-slate-400">${iB ? iB.um : '-'}</td><td class="p-3 text-right font-bold align-top">${iB ? iB.qtd : '-'}</td>`;
                 tbody.appendChild(tr);
             });
 
-            document.getElementById('kpiTotal').innerText = listaOrdenada.length;
-            document.getElementById('kpiOk').innerText = contOk;
-            document.getElementById('kpiDiv').innerText = contDiv;
-            document.getElementById('kpiSoA').innerText = contSoA;
-            document.getElementById('kpiSoB').innerText = contSoB;
-            aplicarFiltro(filtroAtual);
+            document.getElementById('kpiTotal').innerText = cTotal;
+            document.getElementById('kpiOk').innerText = cOk; document.getElementById('kpiDiv').innerText = cDiv;
+            document.getElementById('kpiSoA').innerText = cSoA; document.getElementById('kpiSoB').innerText = cSoB;
+            aplicarFiltro(filtroStatus);
         }
 
-        // 🟢 CORREÇÃO: Função Excluir Manual refeita para ser 100% independente por lado
-        function excluirManual(descFinal, lado) {
-            if (!exclusoes[lado].includes(descFinal)) {
-                exclusoes[lado].push(descFinal); 
-                localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes)); 
-                mostrarNotificacao("Item Excluído", `O produto foi removido apenas do Lado ${lado}.`);
-                iniciarCruzamento(); 
-            }
-        }
-
+        // --- FILTROS E BUSCA ---
         function aplicarFiltro(tipo) {
-            filtroAtual = tipo;
-            const cards = ['all', 'ok', 'div', 'soa', 'sob'];
-            cards.forEach(c => {
-                const el = document.getElementById(`card-${c}`);
-                if (el) {
-                    if (c === tipo) el.classList.add('ring-2', 'ring-indigo-500', 'dark:ring-indigo-400', 'scale-105', 'shadow-md');
-                    else el.classList.remove('ring-2', 'ring-indigo-500', 'dark:ring-indigo-400', 'scale-105', 'shadow-md');
-                }
+            filtroStatus = tipo;
+            document.querySelectorAll('.card-kpi').forEach(c => c.classList.remove('ring-2', 'ring-indigo-500', 'scale-105'));
+            document.getElementById(`card-${tipo}`).classList.add('ring-2', 'ring-indigo-500', 'scale-105');
+            document.querySelectorAll('#tbodyMatriz .row-item').forEach(l => { l.style.display = (tipo === 'all' || l.getAttribute('data-status') === tipo) ? '' : 'none'; });
+        }
+        function debounceBusca() { clearTimeout(window.searchT); window.searchT = setTimeout(() => { filtroBusca = document.getElementById('inputBusca').value; iniciarCruzamento(); }, 300); }
+
+        // --- 🟢 EXPORTAÇÃO ESPELHADA (RESPEITA FILTROS VISÍVEIS) ---
+        function exportarExcelResultado() {
+            let dadosExport = [["STATUS", "COD A", "PRODUTO A", "QTD A", "COD B", "PRODUTO B", "QTD B", "DIFERENÇA"]];
+            const { dictA, dictB, listaFinal } = processedData;
+            listaFinal.forEach(chave => {
+                const iA = dictA[chave]; const iB = dictB[chave];
+                const searchTxt = (iA?.descOriginal || "") + (iB?.descOriginal || "") + (iA?.codigo || "") + (iB?.codigo || "");
+                if (filtroBusca && !searchTxt.toUpperCase().includes(filtroBusca.toUpperCase())) return;
+                
+                const qA = iA ? iA.qtd : 0; const qB = iB ? iB.qtd : 0;
+                const diff = normalizarNumero(qA - qB);
+                let st = "DIVERGENCIA";
+                if (diff === 0) st = "OK (BATEU)"; else if (qA === 0) st = "SO NO B"; else if (qB === 0) st = "SO NO A";
+                
+                // Mapeamento de Status para o Filtro Ativo
+                const stMap = { ok: "OK (BATEU)", div: "DIVERGENCIA", soa: "SO NO A", sob: "SO NO B" };
+                const currentStatusValue = diff === 0 ? "ok" : (qA === 0 ? "sob" : (qB === 0 ? "soa" : "div"));
+                
+                if (filtroStatus !== 'all' && currentStatusValue !== filtroStatus) return;
+
+                dadosExport.push([ st, iA?.codigo || "-", iA?.descOriginal || "-", qA, iB?.codigo || "-", iB?.descOriginal || "-", qB, diff ]);
             });
-            document.querySelectorAll('#tbodyMatriz .row-item').forEach(linha => {
-                if (tipo === 'all' || linha.getAttribute('data-status') === tipo) linha.style.display = ''; 
-                else linha.style.display = 'none'; 
-            });
+            const ws = XLSX.utils.aoa_to_sheet(dadosExport); const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Resultado Auditoria"); XLSX.writeFile(wb, `Auditoria_Estoque_PRO.xlsx`);
         }
 
-        function cliqueBotaoCorrelacionar(nomeProduto, idTr) {
+        // --- GESTÃO DE MEMÓRIA (MODAL CUSTOM) ---
+        function abrirConfirmacaoLimpeza() { document.getElementById('confirmModal').classList.remove('hidden'); }
+        function fecharConfirmacao() { document.getElementById('confirmModal').classList.add('hidden'); }
+        function executarLimpezaTotal() { localStorage.clear(); location.reload(); }
+
+        // --- AÇÕES ---
+        function cliqueBotaoCorrelacionar(p, tr) {
             if (!produtoAguardandoCorrelacao) {
-                produtoAguardandoCorrelacao = nomeProduto; idLinhaAguardando = idTr;
-                document.getElementById(idTr).classList.add('linha-selecionada');
-                document.getElementById('nomeSelecionado').innerText = nomeProduto;
-                let barra = document.getElementById('barraCorrelação');
-                barra.classList.remove('opacity-0', '-translate-y-24', 'pointer-events-none');
-                barra.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
+                produtoAguardandoCorrelacao = p; idLinhaAguardando = tr; document.getElementById(tr).classList.add('linha-selecionada');
+                document.getElementById('nomeSelecionado').innerText = p;
+                document.getElementById('barraCorrelação').classList.replace('opacity-0', 'opacity-100');
+                document.getElementById('barraCorrelação').classList.replace('-translate-y-24', 'translate-y-0');
+                document.getElementById('barraCorrelação').classList.remove('pointer-events-none');
             } else {
-                let origem = produtoAguardandoCorrelacao; let destino = nomeProduto;
-                if (origem !== destino) { dicionarioMescla[origem] = destino; localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); }
+                let o = produtoAguardandoCorrelacao; if (o !== p) { dicionarioMescla[o] = p; localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); }
                 cancelarCorrelação(); iniciarCruzamento();
             }
         }
-
-        function cancelarCorrelação() {
+        function cancelarCorrelação() { 
             if (idLinhaAguardando && document.getElementById(idLinhaAguardando)) document.getElementById(idLinhaAguardando).classList.remove('linha-selecionada');
-            produtoAguardandoCorrelacao = null; idLinhaAguardando = null;
-            let barra = document.getElementById('barraCorrelação');
-            barra.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
-            barra.classList.add('opacity-0', '-translate-y-24', 'pointer-events-none');
+            produtoAguardandoCorrelacao = null; document.getElementById('barraCorrelação').classList.replace('opacity-100', 'opacity-0');
+            document.getElementById('barraCorrelação').classList.replace('translate-y-0', '-translate-y-24');
+            document.getElementById('barraCorrelação').classList.add('pointer-events-none');
         }
+        function excluirManual(p, l) { exclusoes[l].push(p); localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes)); iniciarCruzamento(); }
 
-        function buscarSugestoesIA() {
-            let container = document.getElementById('aiSugestoesLista');
-            mesclasEmLote = {}; document.getElementById('aiModal').classList.remove('hidden');
-            container.innerHTML = '<div class="p-8 flex justify-center"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>';
-            setTimeout(() => {
-                let dictA = estruturarLado(dadosRawA, 'A'); let dictB = estruturarLado(dadosRawB, 'B');
-                let chavesA = Object.keys(dictA).filter(k => !dictB[k]); let chavesB = Object.keys(dictB).filter(k => !dictA[k]);
-                let sugestoes = [];
-                chavesA.forEach(itemA => { chavesB.forEach(itemB => { let score = calcularSimilaridade(itemA, itemB); if (score >= 0.60 && score < 0.88) sugestoes.push({ itemA, itemB, score }); }); });
-                sugestoes.sort((a, b) => b.score - a.score); container.innerHTML = '';
-                if (sugestoes.length === 0) { container.innerHTML = '<p class="text-center py-6">Nenhuma similaridade encontrada.</p>'; return; }
-                sugestoes.forEach((sug, idx) => {
-                    let div = document.createElement('div');
-                    div.className = "bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors duration-300";
-                    div.innerHTML = `<div class="text-sm w-full"><div class="font-medium text-slate-800 dark:text-slate-200"><span class="text-slate-400 mr-2">A</span> ${sug.itemA}</div><div class="font-medium text-slate-800 dark:text-slate-200 mt-1"><span class="text-slate-400 mr-2">B</span> ${sug.itemB}</div><div class="text-xs text-indigo-600 font-semibold mt-2 bg-indigo-50 px-2 py-1 rounded">Afinidade: ${Math.round(sug.score * 100)}%</div></div><button id="btn-batch-${idx}" onclick="agendarMesclaLote('${esc(sug.itemA)}', '${esc(sug.itemB)}', 'btn-batch-${idx}')" class="bg-white dark:bg-slate-700 border border-slate-200 text-slate-700 dark:text-slate-200 px-6 py-2 rounded-lg text-sm font-semibold w-full md:w-auto hover:bg-slate-50 transition-colors">Unir Pares</button>`;
-                    container.appendChild(div);
-                });
-            }, 300);
-        }
-
-        function agendarMesclaLote(itemA, itemB, idBtn) {
-            let btn = document.getElementById(idBtn);
-            if (mesclasEmLote[itemA]) { delete mesclasEmLote[itemA]; btn.innerText = "Unir Pares"; btn.className = "bg-white dark:bg-slate-700 border border-slate-200 text-slate-700 dark:text-slate-200 px-6 py-2 rounded-lg text-sm font-semibold w-full md:w-auto hover:bg-slate-50 transition-colors"; } 
-            else { mesclasEmLote[itemA] = itemB; btn.innerText = "✓ Selecionado"; btn.className = "bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-semibold w-full md:w-auto shadow-md"; }
-        }
-
-        function aplicarMesclasEmLote() { Object.assign(dicionarioMescla, mesclasEmLote); localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); fecharModalIA(); iniciarCruzamento(); }
-        function fecharModalIA() { document.getElementById('aiModal').classList.add('hidden'); }
+        // --- CONTROLE UI ---
         function abrirManual() { document.getElementById('manualModal').classList.remove('hidden'); }
         function fecharManual() { document.getElementById('manualModal').classList.add('hidden'); }
         function abrirGerenciador() { document.getElementById('regrasModal').classList.remove('hidden'); renderizarRegrasMescla(); renderizarListaExclusoes(); }
-        function fecharGerenciador() { document.getElementById('regrasModal').classList.add('hidden'); iniciarCruzamento(); }
-        
-        function mudarAba(aba) {
-            let isM = aba === 'mesclas';
-            document.getElementById('conteudoMesclas').classList.toggle('hidden', !isM);
-            document.getElementById('conteudoExclusoes').classList.toggle('hidden', isM);
-            document.getElementById('abaMesclas').className = isM ? "px-4 py-2 text-sm font-semibold rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 transition-colors" : "px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 hover:bg-slate-50 transition-colors cursor-pointer";
-            document.getElementById('abaExclusoes').className = !isM ? "px-4 py-2 text-sm font-semibold rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 transition-colors" : "px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 hover:bg-slate-50 transition-colors cursor-pointer";
-        }
-        
-        function renderizarRegrasMescla() {
-            let tbody = document.getElementById('tbodyRegras'); tbody.innerHTML = ''; let chaves = Object.keys(dicionarioMescla);
-            if(chaves.length === 0) { tbody.innerHTML = '<tr><td class="p-6 text-center text-slate-400">Sem correlações feitas.</td></tr>'; return; }
-            chaves.forEach(origem => {
-                let tr = document.createElement('tr');
-                tr.innerHTML = `<td class="p-3 text-sm text-slate-600 dark:text-slate-300">${origem} <span class="mx-2 text-slate-300">➔</span> <span class="font-semibold text-slate-900 dark:text-white">${dicionarioMescla[origem]}</span></td><td class="p-3 text-right"><button onclick="removerMescla('${esc(origem)}')" class="text-red-500 font-semibold text-xs hover:bg-red-50 px-3 py-1.5 rounded transition-colors duration-300">Desfazer</button></td>`;
-                tbody.appendChild(tr);
-            });
-        }
-        
-        function renderizarListaExclusoes() {
-            let tbodyA = document.getElementById('tbodyExcluidosA'); let tbodyB = document.getElementById('tbodyExcluidosB');
-            tbodyA.innerHTML = ''; tbodyB.innerHTML = '';
-            exclusoes.A.forEach(item => tbodyA.innerHTML += `<tr><td class="p-3 text-sm flex justify-between items-center text-slate-600 dark:text-slate-300"><span>${item}</span> <button onclick="restaurarExclusao('${esc(item)}', 'A')" class="text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded font-medium transition-colors duration-300">Voltar</button></td></tr>`);
-            exclusoes.B.forEach(item => tbodyB.innerHTML += `<tr><td class="p-3 text-sm flex justify-between items-center text-slate-600 dark:text-slate-300"><span>${item}</span> <button onclick="restaurarExclusao('${esc(item)}', 'B')" class="text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded font-medium transition-colors duration-300">Voltar</button></td></tr>`);
-        }
-        
-        function removerMescla(origem) { delete dicionarioMescla[origem]; localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); renderizarRegrasMescla(); }
-        function restaurarExclusao(item, lado) { exclusoes[lado] = exclusoes[lado].filter(i => i !== item); localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes)); renderizarListaExclusoes(); iniciarCruzamento(); }
-        function limparTodaMemoria() { if(confirm("Apagar TODAS as memórias?")) { dicionarioMescla = {}; exclusoes = { A: [], B: [] }; localStorage.clear(); renderizarRegrasMescla(); renderizarListaExclusoes(); iniciarCruzamento(); } }
+        function fecharGerenciador() { document.getElementById('regrasModal').classList.add('hidden'); }
+        function mudarAba(aba) { let isM = aba === 'mesclas'; document.getElementById('conteudoMesclas').classList.toggle('hidden', !isM); document.getElementById('conteudoExclusoes').classList.toggle('hidden', isM); }
+        function renderizarRegrasMescla() { let tbody = document.getElementById('tbodyRegras'); tbody.innerHTML = ''; Object.keys(dicionarioMescla).forEach(o => { let tr = document.createElement('tr'); tr.innerHTML = `<td class="p-3 text-xs text-slate-600 dark:text-slate-300">${o} ➔ ${dicionarioMescla[o]}</td><td class="p-3 text-right"><button onclick="removerMescla('${esc(o)}')" class="text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-900/20 px-2 rounded">Desfazer</button></td>`; tbody.appendChild(tr); }); }
+        function renderizarListaExclusoes() { let tbA = document.getElementById('tbodyExcluidosA'); let tbB = document.getElementById('tbodyExcluidosB'); tbA.innerHTML = ''; tbB.innerHTML = ''; exclusoes.A.forEach(item => tbA.innerHTML += `<tr><td class="p-2 text-xs flex justify-between text-slate-600 dark:text-slate-300">${item} <button onclick="restaurarExclusao('${esc(item)}', 'A')" class="text-indigo-500 font-bold">Voltar</button></td></tr>`); exclusoes.B.forEach(item => tbB.innerHTML += `<tr><td class="p-2 text-xs flex justify-between text-slate-600 dark:text-slate-300">${item} <button onclick="restaurarExclusao('${esc(item)}', 'B')" class="text-indigo-500 font-bold">Voltar</button></td></tr>`); }
+        function removerMescla(o) { delete dicionarioMescla[o]; localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); renderizarRegrasMescla(); iniciarCruzamento(); }
+        function restaurarExclusao(i, l) { exclusoes[l] = exclusoes[l].filter(x => x !== i); localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes)); renderizarListaExclusoes(); iniciarCruzamento(); }
+        function exportarBackup() { const blob = new Blob([JSON.stringify({ dicionarioMescla, exclusoes })], { type: "application/json" }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "Backup_Conciliador.json"; a.click(); }
+        function processarImportacaoBackup(e) { const reader = new FileReader(); reader.onload = evt => { const d = JSON.parse(evt.target.result); dicionarioMescla = d.dicionarioMescla; exclusoes = d.exclusoes; localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes)); mostrarNotificacao("Sucesso", "Memória Restaurada!"); location.reload(); }; reader.readAsText(e.target.files[0]); }
 
+        // --- IA LOTE ---
+        function buscarSugestoesIA() {
+            let container = document.getElementById('aiSugestoesLista'); mesclasEmLote = {}; document.getElementById('aiModal').classList.remove('hidden');
+            container.innerHTML = '<p class="p-8 text-center text-indigo-600 font-bold animate-pulse">Analisando similaridades matematicamente...</p>';
+            setTimeout(() => {
+                let dictA = estruturarLado(dadosRawA, 'A'); let dictB = estruturarLado(dadosRawB, 'B');
+                let suggestions = [];
+                Object.keys(dictA).forEach(itemA => { Object.keys(dictB).forEach(itemB => { let sc = calcularSimilaridade(itemA, itemB); if (sc >= 0.60 && sc < 0.88) suggestions.push({ itemA, itemB, sc }); }); });
+                container.innerHTML = suggestions.length ? '' : '<p class="p-8 text-center text-slate-400">Nenhum produto semelhante encontrado.</p>';
+                suggestions.sort((a,b) => b.sc - a.sc).forEach((s, idx) => {
+                    let d = document.createElement('div'); d.className = "bg-slate-50 dark:bg-slate-800 p-4 rounded-xl flex justify-between items-center gap-4 border dark:border-slate-700";
+                    d.innerHTML = `<div class="text-xs"><strong>A:</strong> ${s.itemA}<br><strong>B:</strong> ${s.itemB}<br><span class="text-indigo-500 font-bold">Afinidade: ${Math.round(s.sc*100)}%</span></div><button id="b-at-${idx}" onclick="agendarMesclaLote('${esc(s.itemA)}', '${esc(s.itemB)}', 'b-at-${idx}')" class="bg-white dark:bg-slate-700 border dark:border-slate-600 text-xs px-4 py-2 rounded-lg font-bold shrink-0 transition-colors">Unir</button>`;
+                    container.appendChild(d);
+                });
+            }, 300);
+        }
+        function agendarMesclaLote(a, b, id) { let btn = document.getElementById(id); if (mesclasEmLote[a]) { delete mesclasEmLote[a]; btn.className = "bg-white dark:bg-slate-700 border dark:border-slate-600 text-xs px-4 py-2 rounded-lg font-bold shrink-0"; btn.innerText="Unir"; } else { mesclasEmLote[a] = b; btn.className = "bg-emerald-600 text-white text-xs px-4 py-2 rounded-lg font-bold shrink-0"; btn.innerText="Selecionado"; } }
+        function aplicarMesclasEmLote() { Object.assign(dicionarioMescla, mesclasEmLote); localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); document.getElementById('aiModal').classList.add('hidden'); iniciarCruzamento(); }
+        function fecharModalIA() { document.getElementById('aiModal').classList.add('hidden'); }
+
+        // --- 🟢 LEITURA COM TRATAMENTO DE ERRO (TRY/CATCH) ---
+        function lerArquivoExcel(file, idLado) { 
+            const loader = document.getElementById('loading' + idLado); loader.classList.remove('hidden');
+            const r = new FileReader(); 
+            r.onload = function(e) { 
+                try {
+                    const w = XLSX.read(new Uint8Array(e.target.result), {type: 'array'}); 
+                    const rows = XLSX.utils.sheet_to_json(w.Sheets[w.SheetNames[0]], {header: 1, defval: ""});
+                    let pad = classificarEExtrairDados(rows, idLado);
+                    if (idLado === 'A') dadosRawA = pad; else dadosRawB = pad;
+                    mostrarNotificacao("Ficheiro Lido", `${pad.length} linhas carregadas.`);
+                } catch (err) {
+                    mostrarNotificacao("Erro Crítico", "Arquivo inválido ou corrompido.");
+                    console.error(err);
+                } finally {
+                    loader.classList.add('hidden');
+                }
+            }; 
+            r.onerror = () => { loader.classList.add('hidden'); mostrarNotificacao("Erro", "Falha ao ler o arquivo."); };
+            r.readAsArrayBuffer(file); 
+        }
         document.getElementById('fileA').addEventListener('change', e => lerArquivoExcel(e.target.files[0], 'A'));
         document.getElementById('fileB').addEventListener('change', e => lerArquivoExcel(e.target.files[0], 'B'));
-        function lerArquivoExcel(file, idLado) { const r = new FileReader(); r.onload = function(e) { const w = XLSX.read(new Uint8Array(e.target.result), {type: 'array'}); const rows = XLSX.utils.sheet_to_json(w.Sheets[w.SheetNames[0]], {header: 1, defval: ""}); let dadosPadronizados = classificarEExtrairDados(rows, idLado); if (idLado === 'A') dadosRawA = dadosPadronizados; else dadosRawB = dadosPadronizados; }; r.readAsArrayBuffer(file); }
-
-        function carregarDadosTeste() {
-            dadosRawA = [ { codigo: "101", descOriginal: "Oleo Lubrificante Diesel", um: "LT", qtdRaw: 10 }, { codigo: "105", descOriginal: "Oleo Lubr Diesel", um: "LT", qtdRaw: 2 }, { codigo: "102", descOriginal: "Adubo Especial Lado Esquerdo", um: "KG", qtdRaw: 5 }, { codigo: "-", descOriginal: "Produto Sem Codigo", um: "CX", qtdRaw: 50 } ];
-            dadosRawB = [ { codigo: "201", descOriginal: "OLEO LUBRIFICANTE", um: "LT", qtdRaw: 12 }, { codigo: "103", descOriginal: "Adubo Esp Lado Direito", um: "KG", qtdRaw: 5 }, { codigo: "999", descOriginal: "Produto Sem Codigo", um: "CX", qtdRaw: 50 } ];
-            iniciarCruzamento();
-        }
     </script>
 </body>
 </html>
