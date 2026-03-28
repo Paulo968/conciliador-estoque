@@ -15,7 +15,7 @@
     <!-- 1. Carrega a Biblioteca Primeiro -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 🟢 CORREÇÃO: Biblioteca XLSX (SheetJS) que estava faltando -->
+    <!-- 🟢 CORREÇÃO: Biblioteca XLSX (SheetJS) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <!-- 2. Ativa o Modo Escuro Manualmente -->
@@ -76,7 +76,8 @@
 
     <input type="file" id="fileImportBackup" accept=".json" class="hidden" onchange="processarImportacaoBackup(event)">
 
-    <div class="max-w-[1500px] mx-auto space-y-6 p-2 md:p-6">
+    <!-- 🟢 CORREÇÃO: Transformamos a div limitadora (max-w) num container Full-Width (w-full) com margens laterais (px-4) para respirar -->
+    <div class="w-full px-4 md:px-8 py-6 space-y-6">
         
         <header class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 flex flex-col md:flex-row justify-between items-center gap-4 transition-colors duration-300">
             <div class="flex items-center gap-4">
