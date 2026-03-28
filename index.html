@@ -1,44 +1,52 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="light">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conciliador de Estoque PRO v7</title>
-    <!-- Configuração do Tailwind para Dark Mode via Classe -->
+    <title>Conciliador de Estoque PRO v8</title>
+    <!-- Script para carregar o tema imediatamente e evitar "piscar" branco ao abrir a página -->
     <script>
-        tailwind = { config: { darkMode: 'class' } }
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
     </script>
+    <!-- 1. Carrega a Biblioteca Primeiro -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <!-- 2. Ativa o Modo Escuro Manualmente -->
+    <script>
+        tailwind.config = { darkMode: 'class' };
+    </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; padding-bottom: 60px; transition: background-color 0.3s, color 0.3s; }
+        body { font-family: 'Inter', sans-serif; padding-bottom: 60px; }
         
         /* Tabela Responsiva e Sticky Header */
         .table-container { max-width: 100vw; overflow-x: auto; -webkit-overflow-scrolling: touch; }
         th { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(8px); }
         
-        /* Badges Modernos */
-        .badge { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+        /* Badges Modernos Light */
+        .badge { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; transition: all 0.3s; }
         .badge-ok { background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
         .badge-sobra { background-color: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
         .badge-falta { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
 
-        /* Dark Mode Badges Adjustments */
-        .dark .badge-ok { background-color: rgba(5, 150, 105, 0.2); color: #34d399; border-color: rgba(5, 150, 105, 0.5); }
-        .dark .badge-sobra { background-color: rgba(217, 119, 6, 0.2); color: #fbbf24; border-color: rgba(217, 119, 6, 0.5); }
-        .dark .badge-falta { background-color: rgba(220, 38, 38, 0.2); color: #f87171; border-color: rgba(220, 38, 38, 0.5); }
+        /* Badges Modernos Dark (Néon suave) */
+        .dark .badge-ok { background-color: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .dark .badge-sobra { background-color: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .dark .badge-falta { background-color: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
 
         /* Botões de Ação */
         .btn-acao { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 0.375rem; transition: all 0.2s; cursor: pointer; border: 1px solid transparent; }
         
-        .light .btn-acao { color: #6b7280; }
-        .light .btn-acao:hover { background-color: #f3f4f6; color: #111827; }
+        .light .btn-acao { color: #64748b; }
+        .light .btn-acao:hover { background-color: #f1f5f9; color: #0f172a; }
         .light .btn-link:hover { color: #4f46e5; background-color: #e0e7ff; }
         .light .btn-del:hover { color: #ef4444; background-color: #fee2e2; }
 
-        .dark .btn-acao { color: #9ca3af; }
-        .dark .btn-acao:hover { background-color: #374151; color: #f3f4f6; }
+        .dark .btn-acao { color: #94a3b8; }
+        .dark .btn-acao:hover { background-color: #334155; color: #f8fafc; }
         .dark .btn-link:hover { color: #818cf8; background-color: rgba(79, 70, 229, 0.3); }
         .dark .btn-del:hover { color: #f87171; background-color: rgba(239, 68, 68, 0.2); }
 
@@ -46,15 +54,21 @@
         .light .linha-selecionada { background-color: #e0e7ff !important; }
         .dark .linha-selecionada { background-color: rgba(79, 70, 229, 0.2) !important; }
         
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        /* Efeito de Clique nos Cards (Filtro) */
+        .card-kpi { cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-kpi:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .card-kpi:active { transform: translateY(0); }
+        
+        /* Scrollbar Elegante */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .dark ::-webkit-scrollbar-thumb { background: #4b5563; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; border: 2px solid transparent; background-clip: padding-box; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-900 dark:bg-gray-950 dark:text-gray-100 transition-colors duration-200">
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
 
     <!-- Input escondido para importar backup JSON -->
     <input type="file" id="fileImportBackup" accept=".json" class="hidden" onchange="processarImportacaoBackup(event)">
@@ -62,115 +76,112 @@
     <div class="max-w-[1500px] mx-auto space-y-6 p-2 md:p-6">
         
         <!-- Header SaaS -->
-        <header class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-5 flex flex-col md:flex-row justify-between items-center gap-4 transition-colors">
-            <div class="flex items-center gap-3">
-                <div class="bg-indigo-600 p-2 rounded-lg text-white shadow-md">
+        <header class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 flex flex-col md:flex-row justify-between items-center gap-4 transition-colors duration-300">
+            <div class="flex items-center gap-4">
+                <div class="bg-indigo-600 dark:bg-indigo-500 p-2.5 rounded-xl text-white shadow-lg shadow-indigo-500/30">
                     <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
                 </div>
                 <div>
-                    <h1 class="text-xl md:text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Conciliador PRO</h1>
-                    <p class="text-gray-500 dark:text-gray-400 text-sm">Auditoria inteligente de estoque</p>
+                    <h1 class="text-xl md:text-2xl font-bold tracking-tight text-slate-900 dark:text-white transition-colors duration-300">Conciliador PRO</h1>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm transition-colors duration-300">Auditoria Inteligente de Estoque</p>
                 </div>
             </div>
-            <div class="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
-                <button onclick="toggleDarkMode()" class="px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition" title="Alternar Tema">
+            <div class="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scroll">
+                <button onclick="toggleDarkMode()" class="px-3 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-300 flex items-center justify-center" title="Alternar Tema">
                     <svg id="icon-sun" class="w-5 h-5 hidden dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                     <svg id="icon-moon" class="w-5 h-5 block dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
                 </button>
-                <button onclick="abrirManual()" class="px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition shadow-sm text-sm flex items-center justify-center gap-2 whitespace-nowrap">
+                <button onclick="abrirManual()" class="px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-all duration-300 shadow-sm text-sm flex items-center justify-center gap-2 whitespace-nowrap">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                     Manual
                 </button>
-                <button onclick="carregarDadosTeste()" class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition shadow-sm text-sm whitespace-nowrap">
-                    Carregar Teste
-                </button>
-                <button onclick="abrirGerenciador()" class="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 font-medium rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition shadow-sm text-sm flex items-center justify-center gap-2 whitespace-nowrap">
+                <button onclick="abrirGerenciador()" class="px-4 py-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 font-semibold rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-all duration-300 shadow-sm text-sm flex items-center justify-center gap-2 whitespace-nowrap">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                    Memória / Aprendizado
+                    Memória de Regras
                 </button>
             </div>
         </header>
 
         <!-- Controles Principais -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-5 transition-colors">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 transition-colors duration-300">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <!-- Upload A -->
                 <div>
-                    <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                        <span class="w-3 h-3 rounded-full bg-emerald-500"></span> Estoque A (Sistema 1)
+                    <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                        <span class="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span> Estoque A (Sistema 1)
                     </label>
-                    <div class="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                        <input type="file" id="fileA" accept=".xlsx, .xls, .csv" class="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 dark:file:bg-emerald-900/30 file:text-emerald-700 dark:file:text-emerald-400 hover:file:bg-emerald-100 dark:hover:file:bg-emerald-900/50 cursor-pointer outline-none transition-colors"/>
+                    <div class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors duration-300">
+                        <input type="file" id="fileA" accept=".xlsx, .xls, .csv" class="w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 dark:file:bg-emerald-500/10 file:text-emerald-700 dark:file:text-emerald-400 hover:file:bg-emerald-100 dark:hover:file:bg-emerald-500/20 cursor-pointer outline-none transition-colors duration-300"/>
                     </div>
                 </div>
                 <!-- Upload B -->
                 <div>
-                    <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                        <span class="w-3 h-3 rounded-full bg-blue-500"></span> Estoque B (Sistema 2)
+                    <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                        <span class="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]"></span> Estoque B (Sistema 2)
                     </label>
-                    <div class="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                        <input type="file" id="fileB" accept=".xlsx, .xls, .csv" class="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-400 hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50 cursor-pointer outline-none transition-colors"/>
+                    <div class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors duration-300">
+                        <input type="file" id="fileB" accept=".xlsx, .xls, .csv" class="w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-500/10 file:text-blue-700 dark:file:text-blue-400 hover:file:bg-blue-100 dark:hover:file:bg-blue-500/20 cursor-pointer outline-none transition-colors duration-300"/>
                     </div>
                 </div>
             </div>
 
             <div class="flex flex-col sm:flex-row gap-3">
-                <button onclick="iniciarCruzamento()" class="flex-1 bg-gray-900 dark:bg-indigo-600 hover:bg-gray-800 dark:hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-lg shadow-sm transition flex items-center justify-center gap-2">
+                <button onclick="iniciarCruzamento()" class="flex-1 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white font-semibold py-3.5 px-6 rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-2">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                     Processar Auditoria
                 </button>
-                <button onclick="buscarSugestoesIA()" id="btnIA" class="hidden flex-1 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/40 font-semibold py-3 px-6 rounded-lg shadow-sm transition flex items-center justify-center gap-2">
+                <button onclick="buscarSugestoesIA()" id="btnIA" class="hidden flex-1 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 hover:bg-amber-100 dark:hover:bg-amber-500/20 font-semibold py-3.5 px-6 rounded-xl shadow-sm transition-all duration-300 flex items-center justify-center gap-2">
                     <svg class="w-5 h-5 text-amber-500 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                     Buscar Similares via IA
                 </button>
             </div>
         </div>
 
-        <!-- Tabela -->
+        <!-- Tabela & Filtros -->
         <div id="areaTabela" class="hidden">
-            <!-- 🟢 NOVO: Dashboard de KPIs (Resumo Analítico) -->
+            <!-- Dashboard de KPIs Interativo (Filtros) -->
             <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
-                <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex items-center justify-between shadow-sm transition-colors">
-                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">Total Produtos</span>
-                    <span class="text-lg font-bold text-gray-900 dark:text-white" id="kpiTotal">0</span>
+                <div id="card-all" onclick="aplicarFiltro('all')" class="card-kpi ring-2 ring-indigo-500 dark:ring-indigo-400 scale-105 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex flex-col justify-center transition-colors duration-300">
+                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total</span>
+                    <span class="text-2xl font-bold text-slate-900 dark:text-white mt-1" id="kpiTotal">0</span>
                 </div>
-                <div class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 rounded-lg p-3 flex items-center justify-between shadow-sm transition-colors">
-                    <span class="text-xs font-semibold text-emerald-700 dark:text-emerald-400">Bateu (OK)</span>
-                    <span class="text-lg font-bold text-emerald-700 dark:text-emerald-400" id="kpiOk">0</span>
+                <div id="card-ok" onclick="aplicarFiltro('ok')" class="card-kpi bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-xl p-4 flex flex-col justify-center transition-colors duration-300" title="Ver apenas os que bateram">
+                    <span class="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Bateu (OK)</span>
+                    <span class="text-2xl font-bold text-emerald-700 dark:text-emerald-400 mt-1" id="kpiOk">0</span>
                 </div>
-                <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/50 rounded-lg p-3 flex items-center justify-between shadow-sm transition-colors">
-                    <span class="text-xs font-semibold text-amber-700 dark:text-amber-400">Divergências</span>
-                    <span class="text-lg font-bold text-amber-700 dark:text-amber-400" id="kpiDiv">0</span>
+                <div id="card-div" onclick="aplicarFiltro('div')" class="card-kpi bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 rounded-xl p-4 flex flex-col justify-center transition-colors duration-300" title="Ver apenas as divergências">
+                    <span class="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Divergências</span>
+                    <span class="text-2xl font-bold text-amber-700 dark:text-amber-400 mt-1" id="kpiDiv">0</span>
                 </div>
-                <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex items-center justify-between shadow-sm transition-colors">
-                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">Só no A</span>
-                    <span class="text-lg font-bold text-gray-700 dark:text-gray-300" id="kpiSoA">0</span>
+                <div id="card-soa" onclick="aplicarFiltro('soa')" class="card-kpi bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-xl p-4 flex flex-col justify-center transition-colors duration-300" title="Ver o que sobrou no Lado A">
+                    <span class="text-xs font-semibold text-rose-700 dark:text-rose-400 uppercase tracking-wider">Só no A</span>
+                    <span class="text-2xl font-bold text-rose-700 dark:text-rose-400 mt-1" id="kpiSoA">0</span>
                 </div>
-                <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex items-center justify-between shadow-sm transition-colors">
-                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">Só no B</span>
-                    <span class="text-lg font-bold text-gray-700 dark:text-gray-300" id="kpiSoB">0</span>
+                <div id="card-sob" onclick="aplicarFiltro('sob')" class="card-kpi bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-xl p-4 flex flex-col justify-center transition-colors duration-300" title="Ver o que sobrou no Lado B">
+                    <span class="text-xs font-semibold text-rose-700 dark:text-rose-400 uppercase tracking-wider">Só no B</span>
+                    <span class="text-2xl font-bold text-rose-700 dark:text-rose-400 mt-1" id="kpiSoB">0</span>
                 </div>
             </div>
 
-            <div class="table-container bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 transition-colors">
+            <div class="table-container bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-colors duration-300 rounded-xl">
                 <table class="w-full min-w-[1100px] text-sm text-left whitespace-nowrap" id="tabelaPrincipal">
                     <thead>
-                        <tr class="border-b border-gray-200 dark:border-gray-800">
-                            <th colspan="4" class="p-3 text-center text-gray-800 dark:text-gray-200 font-bold border-r border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
-                                <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-2"></span> LADO A
+                        <tr class="border-b border-slate-200 dark:border-slate-800">
+                            <th colspan="4" class="p-3 text-center text-slate-800 dark:text-slate-200 font-bold border-r border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 transition-colors duration-300">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-2 shadow-[0_0_6px_rgba(16,185,129,0.8)]"></span> LADO A
                             </th>
-                            <th class="p-3 text-center text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-widest bg-gray-100 dark:bg-gray-900 w-32 border-r border-gray-200 dark:border-gray-800">Status</th>
-                            <th colspan="4" class="p-3 text-center text-gray-800 dark:text-gray-200 font-bold bg-gray-50 dark:bg-gray-800/50">
-                                <span class="w-2 h-2 rounded-full bg-blue-500 inline-block mr-2"></span> LADO B
+                            <th class="p-3 text-center text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest bg-slate-100 dark:bg-slate-800 w-32 border-r border-slate-200 dark:border-slate-800 transition-colors duration-300">Status</th>
+                            <th colspan="4" class="p-3 text-center text-slate-800 dark:text-slate-200 font-bold bg-slate-50 dark:bg-slate-800/50 transition-colors duration-300">
+                                <span class="w-2 h-2 rounded-full bg-blue-500 inline-block mr-2 shadow-[0_0_6px_rgba(59,130,246,0.8)]"></span> LADO B
                             </th>
                         </tr>
-                        <tr class="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider border-b-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+                        <tr class="text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider border-b-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 transition-colors duration-300">
                             <th class="p-3 w-16 text-center">Ações</th>
                             <th class="p-3 min-w-[200px]">Produto (A)</th>
                             <th class="p-3 w-12 text-center">UM</th>
-                            <th class="p-3 w-20 text-right border-r border-gray-200 dark:border-gray-800">Qtd</th>
+                            <th class="p-3 w-20 text-right border-r border-slate-200 dark:border-slate-800">Qtd</th>
                             
-                            <th class="p-3 text-center bg-gray-50 dark:bg-gray-800/30 border-r border-gray-200 dark:border-gray-800">Resultado</th>
+                            <th class="p-3 text-center bg-slate-50 dark:bg-slate-800/30 border-r border-slate-200 dark:border-slate-800">Resultado</th>
                             
                             <th class="p-3 w-16 text-center">Ações</th>
                             <th class="p-3 min-w-[200px]">Produto (B)</th>
@@ -178,14 +189,14 @@
                             <th class="p-3 w-20 text-right">Qtd</th>
                         </tr>
                     </thead>
-                    <tbody id="tbodyMatriz" class="divide-y divide-gray-100 dark:divide-gray-800"></tbody>
+                    <tbody id="tbodyMatriz" class="divide-y divide-slate-100 dark:divide-slate-800 transition-colors duration-300"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
     <!-- 🟢 TOAST FLUTUANTE DE CORRELAÇÃO -->
-    <div id="barraCorrelação" class="fixed top-6 left-1/2 transform -translate-x-1/2 -translate-y-24 opacity-0 bg-gray-900 dark:bg-indigo-900 text-white px-6 py-4 rounded-xl shadow-2xl transition-all duration-300 z-50 flex items-center gap-4 border border-gray-700 dark:border-indigo-700 pointer-events-none">
+    <div id="barraCorrelação" class="fixed top-6 left-1/2 transform -translate-x-1/2 -translate-y-24 opacity-0 bg-slate-900 dark:bg-indigo-900 text-white px-6 py-4 rounded-xl shadow-2xl transition-all duration-300 z-50 flex items-center gap-4 border border-slate-700 dark:border-indigo-700 pointer-events-none">
         <div class="bg-indigo-500/20 p-2 rounded-full">
             <svg class="w-6 h-6 text-indigo-400 dark:text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
         </div>
@@ -193,13 +204,13 @@
             <p class="font-bold text-sm">Selecione o par para:</p>
             <p class="text-indigo-300 dark:text-indigo-200 font-mono text-xs mt-0.5 truncate max-w-[250px]" id="nomeSelecionado"></p>
         </div>
-        <button onclick="cancelarCorrelação()" class="ml-4 bg-gray-700 dark:bg-indigo-800 hover:bg-gray-600 dark:hover:bg-indigo-700 text-white text-xs font-bold py-1.5 px-3 rounded pointer-events-auto transition">
+        <button onclick="cancelarCorrelação()" class="ml-4 bg-slate-700 dark:bg-indigo-800 hover:bg-slate-600 dark:hover:bg-indigo-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg pointer-events-auto transition-colors duration-300">
             Cancelar
         </button>
     </div>
 
     <!-- 🟢 TOAST DE NOTIFICAÇÃO DA IA HEURÍSTICA -->
-    <div id="toastNotificacao" class="fixed top-6 right-6 transform translate-x-full opacity-0 bg-gray-900 dark:bg-indigo-900 text-white px-6 py-4 rounded-xl shadow-2xl transition-all duration-500 z-50 flex items-center gap-3 border border-gray-700 dark:border-indigo-700">
+    <div id="toastNotificacao" class="fixed top-6 right-6 transform translate-x-full opacity-0 bg-slate-900 dark:bg-indigo-900 text-white px-6 py-4 rounded-xl shadow-2xl transition-all duration-500 z-50 flex items-center gap-3 border border-slate-700 dark:border-indigo-700">
         <span class="text-2xl">🤖</span>
         <div>
             <p class="font-bold text-sm" id="toastTitulo">Aviso</p>
@@ -207,151 +218,92 @@
         </div>
     </div>
 
-    <!-- 🟢 Modal do Manual de Uso Embutido -->
-    <div id="manualModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-white dark:bg-gray-900 p-6 md:p-8 rounded-2xl shadow-xl max-w-4xl w-full flex flex-col h-[90vh] border border-gray-100 dark:border-gray-700 transition-colors">
+    <!-- Modal do Manual de Uso Embutido -->
+    <div id="manualModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 transition-opacity">
+        <div class="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl shadow-xl max-w-4xl w-full flex flex-col h-[90vh] border border-slate-100 dark:border-slate-800 transition-colors duration-300">
             
-            <!-- Cabeçalho do Modal -->
-            <div class="flex justify-between items-center mb-4 border-b border-gray-200 dark:border-gray-700 pb-4">
-                <h3 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+                <h3 class="text-xl md:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2 transition-colors">
                     <svg class="w-6 h-6 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                     Manual do Usuário
                 </h3>
-                <button onclick="fecharManual()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg p-2 transition">
+                <button onclick="fecharManual()" class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg p-2 transition-colors duration-300">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </div>
             
-            <!-- Corpo do Manual -->
-            <div class="overflow-y-auto flex-1 pr-2 space-y-6 text-gray-700 dark:text-gray-300 text-sm md:text-base leading-relaxed">
-                
-                <p>Bem-vindo ao <strong>Conciliador de Estoque PRO</strong>. Este sistema foi desenvolvido para auditar, limpar e cruzar dados de duas fontes de estoque diferentes de forma rápida, rodando diretamente no seu navegador.</p>
-
+            <div class="overflow-y-auto flex-1 pr-2 space-y-6 text-slate-700 dark:text-slate-300 text-sm md:text-base leading-relaxed transition-colors">
+                <p>Bem-vindo ao <strong>Conciliador de Estoque PRO</strong>. Este sistema audita, limpa e cruza dados de estoques rodando 100% no seu navegador.</p>
                 <section>
-                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2">1. 📝 Preparação e Formatos Aceitos</h4>
-                    <p class="mb-2">O sistema é compatível com exportações de qualquer ERP (SAP, TOTVS, etc), aceitando os seguintes formatos:</p>
-                    <ul class="list-disc pl-6 space-y-1 mb-4">
-                        <li><strong>.xlsx</strong> (Excel moderno)</li>
-                        <li><strong>.xls</strong> (Excel antigo)</li>
-                        <li><strong>.csv</strong> (Valores separados por vírgula)</li>
-                    </ul>
-                    <p class="mb-2">Para que o sistema consiga ler as suas planilhas, elas precisam ter cabeçalhos na primeira linha. O sistema procura por palavras-chave:</p>
-                    <ul class="list-disc pl-6 space-y-1">
-                        <li><strong>Descrição do Produto:</strong> <code>Desc</code>, <code>Nome</code> ou <code>Prod</code>. <em>(Obrigatório)</em></li>
-                        <li><strong>Quantidade:</strong> <code>Qtd</code>, <code>Quant</code> ou <code>Saldo</code>. <em>(Obrigatório)</em></li>
-                        <li><strong>Código:</strong> <code>Cod</code> ou <code>Código</code>. <em>(Opcional)</em></li>
-                        <li><strong>Unidade de Medida:</strong> <code>UM</code>, <code>Unid</code> ou <code>Medida</code>. <em>(Opcional)</em></li>
-                    </ul>
+                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2 transition-colors">1. 📝 Preparação e Formatos</h4>
+                    <p class="mb-2">Aceitamos <strong>.xlsx</strong>, <strong>.xls</strong> e <strong>.csv</strong>. Se a planilha não tiver cabeçalho, a nossa IA tentará identificar as colunas Código, Descrição e Saldo automaticamente através de matemática!</p>
                 </section>
-
                 <section>
-                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2">2. 🚀 Fluxo de Trabalho Básico</h4>
-                    <ol class="list-decimal pl-6 space-y-2">
-                        <li><strong>Upload:</strong> Selecione as planilhas do Estoque A (Esquerdo) e Estoque B (Direito).</li>
-                        <li><strong>Processar Auditoria:</strong> Clique no botão escuro.</li>
-                        <li><strong>Mágica Automática:</strong> O sistema remove acentos, joga para maiúsculo, limpa zeros inúteis, exclui automaticamente "BICO" e "FILTRO" e une itens com 90% ou mais de semelhança sem te perguntar nada.</li>
-                    </ol>
+                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2 transition-colors">2. 📊 Entendendo o Dashboard e Filtros</h4>
+                    <p>No topo da tabela, existem cartões mostrando o status do seu estoque. <strong>Você pode clicar em qualquer um deles para filtrar a tabela instantaneamente.</strong></p>
                 </section>
-
                 <section>
-                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2">3. 📊 Entendendo o Dashboard</h4>
-                    <ul class="list-disc pl-6 space-y-1">
-                        <li><strong class="text-emerald-600 dark:text-emerald-400">🟢 Bateu (OK):</strong> Produtos existem nos dois lados e a quantidade é exatamente igual.</li>
-                        <li><strong class="text-amber-600 dark:text-amber-400">🟠 Divergências:</strong> Existem nos dois lados, mas as quantidades não batem.</li>
-                        <li><strong>⚪ Só no A / Só no B:</strong> Produtos isolados em apenas um dos sistemas (erro de cadastro, etc).</li>
-                    </ul>
-                </section>
-
-                <section>
-                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2">4. 🛠️ Ações Manuais (Botões na Tabela)</h4>
+                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2 transition-colors">3. 🛠️ Ações Manuais (Botões na Tabela)</h4>
                     <ul class="space-y-4">
-                        <li>
-                            <strong class="flex items-center gap-2">🔗 Botão de Correlação (Unir):</strong> 
-                            Clique no botão de link do primeiro produto. Uma barra roxa aparecerá no topo da tela. Em seguida, clique no link do segundo produto. Eles se fundem e as quantidades cruzam na mesma hora.
-                        </li>
-                        <li>
-                            <strong class="flex items-center gap-2">🗑️ Botão de Exclusão:</strong> 
-                            Serve para limpar lixo de um lado específico. Clicando nele, o produto some daquele lado, mas se existir do outro, continua intacto.
-                        </li>
+                        <li><strong class="flex items-center gap-2">🔗 Correlação:</strong> Clique no link do primeiro produto. Uma barra roxa aparecerá. Clique no link do segundo produto para fundi-los.</li>
+                        <li><strong class="flex items-center gap-2">🗑️ Exclusão:</strong> Remove "lixo" apenas daquele lado específico.</li>
                     </ul>
                 </section>
-
-                <section>
-                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2">5. ✨ Assistente de IA em Lote</h4>
-                    <p>Ao clicar no botão amarelo <strong>"Buscar Similares via IA"</strong>, o sistema procura itens que são parecidos (60% a 87%). Na janela que abrir, clique em <strong>Unir Pares</strong> naqueles que fizerem sentido e depois clique em <strong>Aplicar Selecionados</strong>. O trabalho de 1 hora é feito em 10 segundos.</p>
-                </section>
-
-                <section>
-                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2">6. 🧠 Memória e Cloud Backup</h4>
-                    <ul class="list-disc pl-6 space-y-3">
-                        <li>
-                            <strong>Desfazer Correlações (Mesmo lado ou Lados opostos):</strong> 
-                            Juntou os produtos errados? Não tem problema. No botão <em>Memória / Aprendizado</em> no topo da tela, acesse a aba "Correlações" e clique em <strong>Desfazer</strong>. O sistema preserva os dados originais e vai separar os produtos imediatamente, seja uma união do Lado A com Lado B, ou de dois produtos duplicados dentro do próprio Lado A.
-                        </li>
-                        <li>
-                            <strong>Restaurar Exclusões:</strong> Na aba "Exclusões" dentro da Memória, você pode trazer de volta (clicando em "Voltar") qualquer item que tenha excluído da tabela por engano.
-                        </li>
-                        <li>
-                            <strong>Exportar/Importar Backup:</strong> Vai usar outro computador amanhã? Exporte o backup e importe novamente no outro PC. Toda a inteligência de regras será mantida.
-                        </li>
-                    </ul>
-                </section>
-
             </div>
             
-            <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-                <button onclick="fecharManual()" class="bg-indigo-600 text-white px-8 py-2.5 rounded-lg font-bold hover:bg-indigo-700 transition shadow">Entendi, fechar!</button>
+            <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end transition-colors">
+                <button onclick="fecharManual()" class="bg-indigo-600 text-white px-8 py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition shadow">Entendi, fechar!</button>
             </div>
         </div>
     </div>
 
     <!-- Modais de Regras e Backup de Documento -->
-    <div id="regrasModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-xl max-w-4xl w-full flex flex-col h-[85vh] border border-gray-100 dark:border-gray-700 transition-colors">
+    <div id="regrasModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-xl max-w-4xl w-full flex flex-col h-[85vh] border border-slate-100 dark:border-slate-800 transition-colors duration-300">
             
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                 <div>
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">Memória de Aprendizado</h3>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Gerencie regras ou faça Backup do documento para usar em outro PC/GitHub.</p>
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white transition-colors">Memória de Aprendizado</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 transition-colors">Gerencie regras ou faça Backup do documento para usar em outro PC/GitHub.</p>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="exportarBackup()" class="text-xs bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 px-3 py-2 rounded-lg font-semibold transition border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                    <button onclick="exportarBackup()" class="text-xs bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 px-3 py-2 rounded-lg font-semibold transition border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
                         <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg> Exportar Backup
                     </button>
-                    <button onclick="document.getElementById('fileImportBackup').click()" class="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 px-3 py-2 rounded-lg font-semibold transition border border-blue-200 dark:border-blue-800 flex items-center gap-1">
+                    <button onclick="document.getElementById('fileImportBackup').click()" class="text-xs bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 px-3 py-2 rounded-lg font-semibold transition border border-blue-200 dark:border-blue-800 flex items-center gap-1">
                         <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg> Importar Backup
                     </button>
-                    <button onclick="limparTodaMemoria()" class="text-xs bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 px-3 py-2 rounded-lg font-semibold transition border border-red-200 dark:border-red-800">Zerar</button>
+                    <button onclick="limparTodaMemoria()" class="text-xs bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 px-3 py-2 rounded-lg font-semibold transition border border-red-200 dark:border-red-800">Zerar</button>
                 </div>
             </div>
 
-            <div class="flex gap-2 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
-                <button onclick="mudarAba('mesclas')" id="abaMesclas" class="px-4 py-2 text-sm font-semibold rounded-lg bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 transition-colors">Correlações</button>
-                <button onclick="mudarAba('exclusoes')" id="abaExclusoes" class="px-4 py-2 text-sm font-semibold rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Exclusões</button>
+            <div class="flex gap-2 mb-4 border-b border-slate-200 dark:border-slate-700 pb-2 transition-colors">
+                <button onclick="mudarAba('mesclas')" id="abaMesclas" class="px-4 py-2 text-sm font-semibold rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 transition-colors">Correlações</button>
+                <button onclick="mudarAba('exclusoes')" id="abaExclusoes" class="px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Exclusões</button>
             </div>
             
-            <div id="conteudoMesclas" class="overflow-y-auto flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-2 transition-colors">
-                <table class="w-full text-sm text-left"><tbody id="tbodyRegras" class="divide-y divide-gray-100 dark:divide-gray-700"></tbody></table>
+            <div id="conteudoMesclas" class="overflow-y-auto flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 transition-colors">
+                <table class="w-full text-sm text-left"><tbody id="tbodyRegras" class="divide-y divide-slate-100 dark:divide-slate-700 transition-colors"></tbody></table>
             </div>
             <div id="conteudoExclusoes" class="overflow-y-auto flex-1 hidden flex flex-col md:flex-row gap-4">
-                <div class="flex-1 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden bg-white dark:bg-gray-800 transition-colors"><div class="bg-gray-50 dark:bg-gray-900 p-3 border-b border-gray-200 dark:border-gray-700 text-sm font-bold text-gray-700 dark:text-gray-300">A - Excluídos</div><table class="w-full text-sm"><tbody id="tbodyExcluidosA" class="divide-y divide-gray-100 dark:divide-gray-700"></tbody></table></div>
-                <div class="flex-1 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden bg-white dark:bg-gray-800 transition-colors"><div class="bg-gray-50 dark:bg-gray-900 p-3 border-b border-gray-200 dark:border-gray-700 text-sm font-bold text-gray-700 dark:text-gray-300">B - Excluídos</div><table class="w-full text-sm"><tbody id="tbodyExcluidosB" class="divide-y divide-gray-100 dark:divide-gray-700"></tbody></table></div>
+                <div class="flex-1 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-800 transition-colors"><div class="bg-slate-50 dark:bg-slate-900 p-3 border-b border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-700 dark:text-slate-300">A - Excluídos</div><table class="w-full text-sm"><tbody id="tbodyExcluidosA" class="divide-y divide-slate-100 dark:divide-slate-700"></tbody></table></div>
+                <div class="flex-1 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-800 transition-colors"><div class="bg-slate-50 dark:bg-slate-900 p-3 border-b border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-700 dark:text-slate-300">B - Excluídos</div><table class="w-full text-sm"><tbody id="tbodyExcluidosB" class="divide-y divide-slate-100 dark:divide-slate-700"></tbody></table></div>
             </div>
-            <div class="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex justify-end">
-                <button onclick="fecharGerenciador()" class="bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition shadow">Concluir</button>
+            <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end transition-colors">
+                <button onclick="fecharGerenciador()" class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition shadow">Concluir</button>
             </div>
         </div>
     </div>
 
     <!-- Modal IA Lote -->
-    <div id="aiModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-xl max-w-3xl w-full flex flex-col h-[80vh] border border-gray-100 dark:border-gray-700 transition-colors">
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1">Sugestões de IA</h3>
-            <p class="text-gray-500 dark:text-gray-400 mb-6 text-sm">Afinidade configurada: 60% a 87%.</p>
+    <div id="aiModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 transition-opacity">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-xl max-w-3xl w-full flex flex-col h-[80vh] border border-slate-100 dark:border-slate-800 transition-colors duration-300">
+            <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-1 transition-colors">Sugestões de IA</h3>
+            <p class="text-slate-500 dark:text-slate-400 mb-6 text-sm transition-colors">Afinidade matemática: 60% a 87%.</p>
             <div class="overflow-y-auto flex-1 space-y-3 pr-2" id="aiSugestoesLista"></div>
-            <div class="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex gap-3 justify-end">
-                <button onclick="fecharModalIA()" class="text-gray-600 dark:text-gray-400 px-4 py-2 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition">Cancelar</button>
-                <button onclick="aplicarMesclasEmLote()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition shadow">Aplicar Selecionados</button>
+            <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex gap-3 justify-end transition-colors">
+                <button onclick="fecharModalIA()" class="text-slate-600 dark:text-slate-400 px-4 py-2 rounded-xl font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Cancelar</button>
+                <button onclick="aplicarMesclasEmLote()" class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition shadow">Aplicar Selecionados</button>
             </div>
         </div>
     </div>
@@ -367,37 +319,26 @@
     </svg>
 
     <script>
-        // --- 1. DARK MODE TOGGLE ---
+        // --- 1. DARK MODE TOGGLE (CORRIGIDO) ---
         function toggleDarkMode() {
-            const htmlClasses = document.documentElement.classList;
-            if (htmlClasses.contains('dark')) {
-                htmlClasses.remove('dark');
-                htmlClasses.add('light');
-                localStorage.setItem('theme', 'light');
-            } else {
-                htmlClasses.add('dark');
-                htmlClasses.remove('light');
+            const html = document.documentElement;
+            // O toggle inverte a classe. Se não tinha 'dark', põe. Se tinha, tira.
+            html.classList.toggle('dark');
+            
+            // Grava no LocalStorage de forma robusta
+            if (html.classList.contains('dark')) {
                 localStorage.setItem('theme', 'dark');
+            } else {
+                localStorage.setItem('theme', 'light');
             }
         }
-        // Verificar preferência salva
-        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.add('light');
-        }
 
-        // --- 2. BACKUP E IMPORTAÇÃO DE DOCUMENTO (GITHUB PAGES SUPPORT) ---
+        // --- 2. BACKUP E IMPORTAÇÃO DE DOCUMENTO ---
         function exportarBackup() {
-            const dadosBackup = {
-                dicionarioMescla: dicionarioMescla,
-                exclusoes: exclusoes,
-                dataExportacao: new Date().toISOString()
-            };
+            const dadosBackup = { dicionarioMescla: dicionarioMescla, exclusoes: exclusoes, dataExportacao: new Date().toISOString() };
             const jsonString = JSON.stringify(dadosBackup, null, 2);
             const blob = new Blob([jsonString], { type: "application/json" });
             const url = URL.createObjectURL(blob);
-            
             const a = document.createElement('a');
             a.href = url;
             a.download = `Memoria_Conciliador_${new Date().toISOString().slice(0,10)}.json`;
@@ -408,7 +349,6 @@
         function processarImportacaoBackup(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
@@ -418,20 +358,15 @@
                         exclusoes = data.exclusoes;
                         localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla));
                         localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes));
-                        
                         alert("✅ Documento de Memória importado com sucesso!");
                         renderizarRegrasMescla();
                         renderizarListaExclusoes();
                         iniciarCruzamento();
-                    } else {
-                        alert("❌ Arquivo JSON inválido ou corrompido.");
-                    }
-                } catch (err) {
-                    alert("❌ Erro ao ler o arquivo: " + err.message);
-                }
+                    } else { alert("❌ Arquivo JSON inválido ou corrompido."); }
+                } catch (err) { alert("❌ Erro ao ler o arquivo: " + err.message); }
             };
             reader.readAsText(file);
-            event.target.value = ''; // Reseta o input
+            event.target.value = ''; 
         }
 
         // --- MEMÓRIA ---
@@ -444,6 +379,7 @@
         let produtoAguardandoCorrelacao = null; 
         let idLinhaAguardando = null; 
         let mesclasEmLote = {}; 
+        let filtroAtual = 'all';
 
         // --- UTILITÁRIOS ---
         function normalizarTexto(texto) {
@@ -456,7 +392,6 @@
             return isNaN(n) ? 0 : n;
         }
 
-        // Função para mostrar a notificação no canto da tela
         function mostrarNotificacao(titulo, mensagem) {
             let toast = document.getElementById('toastNotificacao');
             document.getElementById('toastTitulo').innerText = titulo;
@@ -479,20 +414,18 @@
             return (2.0 * intersection) / (s1.length + s2.length - 2);
         }
 
-        // --- ETL ---
+        // --- ETL E IA HEURÍSTICA ---
         function aplicarDicionario(nomeNormalizado) {
             let atual = nomeNormalizado; let maxLoops = 10;
             while (dicionarioMescla[atual] && maxLoops > 0) { atual = dicionarioMescla[atual]; maxLoops--; }
             return atual;
         }
 
-        // 🟢 IA HEURÍSTICA: O Motor à prova de falhas para ler Excel sem cabeçalho
         function classificarEExtrairDados(rows, idLado) {
             if (rows.length === 0) return [];
             let headerRowIndex = -1;
             let map = { cod: -1, desc: -1, qtd: -1, um: -1 };
 
-            // 1. Busca Clássica Inteligente
             for (let i = 0; i < Math.min(10, rows.length); i++) {
                 let linha = rows[i];
                 if (!linha || !Array.isArray(linha)) continue;
@@ -506,15 +439,11 @@
                     else if (v.includes("qtd") || v.includes("quant") || v.includes("saldo") || v.includes("est")) m.qtd = cIdx;
                     else if (v === "um" || v.includes("unid") || v.includes("medida")) m.um = cIdx;
                 });
-                
-                if (m.desc !== -1 && m.qtd !== -1) { 
-                    headerRowIndex = i; map = m; break; 
-                }
+                if (m.desc !== -1 && m.qtd !== -1) { headerRowIndex = i; map = m; break; }
             }
 
             let dataStartIndex = headerRowIndex !== -1 ? headerRowIndex + 1 : 0;
 
-            // 2. IA HEURÍSTICA MATEMÁTICA (Código vs Quantidade Amarrado!)
             if (headerRowIndex === -1) {
                 let numCols = rows.reduce((max, r) => Math.max(max, r.length || 0), 0);
                 let pts = Array.from({length: numCols}, (_, c) => ({ col: c, pQtd: 0, pDesc: 0, pUM: 0, pCod: 0 }));
@@ -533,24 +462,14 @@
 
                         if (isNum) {
                             pts[c].pQtd += 2; 
-                            if (hasDecimal) {
-                                pts[c].pQtd += 50; // Ponto decimal (573.00) = 100% Quantidade
-                                pts[c].pCod -= 50; // Código não tem ponto decimal
-                            } else if (hasLeadingZero) {
-                                pts[c].pCod += 50; // Zero à esquerda (01111) = 100% Código
-                                pts[c].pQtd -= 50;
-                            } else {
-                                pts[c].pCod += 1; // Número inteiro normal pode ser os dois
-                            }
+                            if (hasDecimal) { pts[c].pQtd += 50; pts[c].pCod -= 50; } 
+                            else if (hasLeadingZero) { pts[c].pCod += 50; pts[c].pQtd -= 50; } 
+                            else { pts[c].pCod += 1; }
                         } else {
-                            if (hasLettersAndNums && !str.includes(" ") && str.length <= 15) {
-                                pts[c].pCod += 20; // Alfanumérico sem espaço (A123) = 100% Código
-                            } else if (str.length >= 2 && str.length <= 15 && !str.includes(" ")) {
-                                pts[c].pCod += 3; 
-                            }
-                            
-                            if (str.length >= 1 && str.length <= 3 && /[a-zA-Z]/.test(str)) pts[c].pUM += 5; // LT, KG, UN
-                            if (str.length > 8 && str.includes(" ")) pts[c].pDesc += str.length; // Descrição
+                            if (hasLettersAndNums && !str.includes(" ") && str.length <= 15) { pts[c].pCod += 20; } 
+                            else if (str.length >= 2 && str.length <= 15 && !str.includes(" ")) { pts[c].pCod += 3; }
+                            if (str.length >= 1 && str.length <= 3 && /[a-zA-Z]/.test(str)) pts[c].pUM += 5; 
+                            if (str.length > 8 && str.includes(" ")) pts[c].pDesc += str.length; 
                         }
                     });
                 }
@@ -564,10 +483,9 @@
                 let codCol = codC.length ? codC.reduce((max, p) => p.pCod > max.pCod ? p : max, codC[0]).col : -1;
 
                 map = { cod: codCol, desc: descCol, qtd: qtdCol, um: umCol };
-                mostrarNotificacao(`Lado ${idLado}: IA Ativada!`, "Cabeçalhos ausentes. Diferenciamos Código e Quantidade pela lógica matemática.");
+                mostrarNotificacao(`Lado ${idLado}: IA Ativada!`, "Cabeçalhos ausentes. Diferenciamos Código e Quantidade de forma matemática.");
             }
 
-            // 3. Extração e Padronização
             let extraido = [];
             for (let i = dataStartIndex; i < rows.length; i++) {
                 let linha = rows[i];
@@ -651,7 +569,6 @@
             tbody.innerHTML = '';
             document.getElementById('areaTabela').classList.remove('hidden');
 
-            // 🟢 NOVO: Variáveis para contar os KPIs
             let contOk = 0, contDiv = 0, contSoA = 0, contSoB = 0;
 
             listaOrdenada.forEach((descFinal, index) => {
@@ -662,15 +579,29 @@
                 let tr = document.createElement('tr');
                 let idTr = `row-${index}`;
                 tr.id = idTr;
-                tr.className = "hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors";
+                tr.className = "hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors duration-300 row-item";
 
                 let statusHtml = "";
-                // 🟢 NOVO: Contabilizando os status matematicamente
-                if (diff === 0) { statusHtml = `<span class="badge badge-ok">Bateu</span>`; contOk++; }
-                else if (qA === 0) { statusHtml = `<span class="badge badge-falta">Só no B</span>`; contSoB++; }
-                else if (qB === 0) { statusHtml = `<span class="badge badge-sobra">Só no A</span>`; contSoA++; }
-                else if (diff > 0) { statusHtml = `<span class="badge badge-sobra">+${diff} no A</span>`; contDiv++; }
-                else { statusHtml = `<span class="badge badge-falta">${diff} no A</span>`; contDiv++; }
+                let tipoStatus = "all";
+
+                if (diff === 0) { 
+                    statusHtml = `<span class="badge badge-ok">Bateu</span>`; 
+                    contOk++; tipoStatus = "ok";
+                } else if (qA === 0) { 
+                    statusHtml = `<span class="badge badge-falta">Só no B</span>`; 
+                    contSoB++; tipoStatus = "sob";
+                } else if (qB === 0) { 
+                    statusHtml = `<span class="badge badge-sobra">Só no A</span>`; 
+                    contSoA++; tipoStatus = "soa";
+                } else if (diff > 0) { 
+                    statusHtml = `<span class="badge badge-sobra">+${diff} no A</span>`; 
+                    contDiv++; tipoStatus = "div";
+                } else { 
+                    statusHtml = `<span class="badge badge-falta">${Math.abs(diff)} no A</span>`; 
+                    contDiv++; tipoStatus = "div";
+                }
+
+                tr.setAttribute('data-status', tipoStatus);
 
                 let iconLink = `<svg class="w-4 h-4"><use href="#icon-link"></use></svg>`;
                 let iconTrash = `<svg class="w-4 h-4"><use href="#icon-trash"></use></svg>`;
@@ -687,40 +618,65 @@
                         <button onclick="excluirManual('${descFinal}', 'B')" class="btn-acao btn-del" title="Excluir do B">${iconTrash}</button>
                     </div>` : '';
 
-                // 🟢 AQUI: O Código aparece ANTES (em cima) da descrição. 
-                // A lógica de juntar códigos (ex: 1111 / 01111) já acontece automaticamente aqui!
                 let descA = itemA ? 
                     `<div class="text-xs text-indigo-600 dark:text-indigo-400 font-mono font-bold mb-0.5">Cód: ${itemA.codigo}</div>
-                     <div class="font-medium text-gray-900 dark:text-gray-200">${itemA.descOriginal}</div>` 
-                    : '<span class="text-gray-300 dark:text-gray-600">-</span>';
+                     <div class="font-medium text-slate-900 dark:text-slate-200">${itemA.descOriginal}</div>` 
+                    : '<span class="text-slate-300 dark:text-slate-600">-</span>';
 
                 let descB = itemB ? 
                     `<div class="text-xs text-indigo-600 dark:text-indigo-400 font-mono font-bold mb-0.5">Cód: ${itemB.codigo}</div>
-                     <div class="font-medium text-gray-900 dark:text-gray-200">${itemB.descOriginal}</div>` 
-                    : '<span class="text-gray-300 dark:text-gray-600">-</span>';
+                     <div class="font-medium text-slate-900 dark:text-slate-200">${itemB.descOriginal}</div>` 
+                    : '<span class="text-slate-300 dark:text-slate-600">-</span>';
 
                 tr.innerHTML = `
-                    <td class="p-3 text-gray-500 dark:text-gray-400">${acoesA}</td>
-                    <td class="p-3">${descA}</td>
-                    <td class="p-3 text-center text-gray-500 dark:text-gray-400">${itemA ? itemA.um : '-'}</td>
-                    <td class="p-3 text-right font-bold text-gray-900 dark:text-gray-200 border-r border-gray-200 dark:border-gray-800">${itemA ? itemA.qtd : '-'}</td>
+                    <td class="p-3 text-slate-500 dark:text-slate-400 transition-colors">${acoesA}</td>
+                    <td class="p-3 transition-colors">${descA}</td>
+                    <td class="p-3 text-center text-slate-500 dark:text-slate-400 transition-colors">${itemA ? itemA.um : '-'}</td>
+                    <td class="p-3 text-right font-bold text-slate-900 dark:text-slate-200 border-r border-slate-200 dark:border-slate-800 transition-colors">${itemA ? itemA.qtd : '-'}</td>
 
-                    <td class="p-3 text-center bg-gray-50 dark:bg-gray-800/30 border-r border-gray-200 dark:border-gray-800">${statusHtml}</td>
+                    <td class="p-3 text-center bg-slate-50 dark:bg-slate-800/30 border-r border-slate-200 dark:border-slate-800 transition-colors">${statusHtml}</td>
 
-                    <td class="p-3 text-gray-500 dark:text-gray-400">${acoesB}</td>
-                    <td class="p-3">${descB}</td>
-                    <td class="p-3 text-center text-gray-500 dark:text-gray-400">${itemB ? itemB.um : '-'}</td>
-                    <td class="p-3 text-right font-bold text-gray-900 dark:text-gray-200">${itemB ? itemB.qtd : '-'}</td>
+                    <td class="p-3 text-slate-500 dark:text-slate-400 transition-colors">${acoesB}</td>
+                    <td class="p-3 transition-colors">${descB}</td>
+                    <td class="p-3 text-center text-slate-500 dark:text-slate-400 transition-colors">${itemB ? itemB.um : '-'}</td>
+                    <td class="p-3 text-right font-bold text-slate-900 dark:text-slate-200 transition-colors">${itemB ? itemB.qtd : '-'}</td>
                 `;
                 tbody.appendChild(tr);
             });
 
-            // 🟢 NOVO: Atualiza os números no HTML do Dashboard após varrer a lista
             document.getElementById('kpiTotal').innerText = listaOrdenada.length;
             document.getElementById('kpiOk').innerText = contOk;
             document.getElementById('kpiDiv').innerText = contDiv;
             document.getElementById('kpiSoA').innerText = contSoA;
             document.getElementById('kpiSoB').innerText = contSoB;
+
+            aplicarFiltro(filtroAtual);
+        }
+
+        // --- MOTOR DE FILTROS VIA CARDS ---
+        function aplicarFiltro(tipo) {
+            filtroAtual = tipo;
+            const cards = ['all', 'ok', 'div', 'soa', 'sob'];
+            
+            cards.forEach(c => {
+                const el = document.getElementById(`card-${c}`);
+                if (el) {
+                    if (c === tipo) {
+                        el.classList.add('ring-2', 'ring-indigo-500', 'dark:ring-indigo-400', 'scale-105', 'shadow-md');
+                    } else {
+                        el.classList.remove('ring-2', 'ring-indigo-500', 'dark:ring-indigo-400', 'scale-105', 'shadow-md');
+                    }
+                }
+            });
+
+            const linhas = document.querySelectorAll('#tbodyMatriz .row-item');
+            linhas.forEach(linha => {
+                if (tipo === 'all' || linha.getAttribute('data-status') === tipo) {
+                    linha.style.display = ''; 
+                } else {
+                    linha.style.display = 'none'; 
+                }
+            });
         }
 
         // --- CORRELAÇÃO MANUAL ---
@@ -777,18 +733,18 @@
                     });
                 });
                 sugestoes.sort((a, b) => b.score - a.score); container.innerHTML = '';
-                if (sugestoes.length === 0) { container.innerHTML = '<p class="text-center text-gray-500 dark:text-gray-400 py-6">Nenhuma similaridade encontrada.</p>'; return; }
+                if (sugestoes.length === 0) { container.innerHTML = '<p class="text-center text-slate-500 dark:text-slate-400 py-6">Nenhuma similaridade encontrada.</p>'; return; }
 
                 sugestoes.forEach((sug, idx) => {
                     let div = document.createElement('div'); let idBtn = `btn-batch-${idx}`;
-                    div.className = "bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 hover:border-indigo-200 dark:hover:border-indigo-800 transition";
+                    div.className = "bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors duration-300";
                     div.innerHTML = `
                         <div class="text-sm w-full">
-                            <div class="font-medium text-gray-800 dark:text-gray-200"><span class="text-gray-400 dark:text-gray-500 mr-2">A</span> ${sug.itemA}</div>
-                            <div class="font-medium text-gray-800 dark:text-gray-200 mt-1"><span class="text-gray-400 dark:text-gray-500 mr-2">B</span> ${sug.itemB}</div>
+                            <div class="font-medium text-slate-800 dark:text-slate-200"><span class="text-slate-400 dark:text-slate-500 mr-2">A</span> ${sug.itemA}</div>
+                            <div class="font-medium text-slate-800 dark:text-slate-200 mt-1"><span class="text-slate-400 dark:text-slate-500 mr-2">B</span> ${sug.itemB}</div>
                             <div class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold mt-2 bg-indigo-50 dark:bg-indigo-900/30 inline-block px-2 py-1 rounded">Afinidade: ${Math.round(sug.score * 100)}%</div>
                         </div>
-                        <button id="${idBtn}" onclick="agendarMesclaLote('${sug.itemA}', '${sug.itemB}', '${idBtn}')" class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 px-6 py-2 rounded-lg text-sm font-semibold w-full md:w-auto hover:bg-gray-50 dark:hover:bg-gray-600 transition">Unir Pares</button>
+                        <button id="${idBtn}" onclick="agendarMesclaLote('${sug.itemA}', '${sug.itemB}', '${idBtn}')" class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 px-6 py-2 rounded-lg text-sm font-semibold w-full md:w-auto hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors duration-300">Unir Pares</button>
                     `;
                     container.appendChild(div);
                 });
@@ -797,8 +753,8 @@
 
         function agendarMesclaLote(itemA, itemB, idBtn) {
             let btn = document.getElementById(idBtn);
-            if (mesclasEmLote[itemA]) { delete mesclasEmLote[itemA]; btn.innerText = "Unir Pares"; btn.className = "bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 px-6 py-2 rounded-lg text-sm font-semibold w-full md:w-auto hover:bg-gray-50 dark:hover:bg-gray-600 transition"; } 
-            else { mesclasEmLote[itemA] = itemB; btn.innerText = "✓ Selecionado"; btn.className = "bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-semibold w-full md:w-auto shadow-md"; }
+            if (mesclasEmLote[itemA]) { delete mesclasEmLote[itemA]; btn.innerText = "Unir Pares"; btn.className = "bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 px-6 py-2 rounded-lg text-sm font-semibold w-full md:w-auto hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors duration-300"; } 
+            else { mesclasEmLote[itemA] = itemB; btn.innerText = "✓ Selecionado"; btn.className = "bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-semibold w-full md:w-auto shadow-md transition-colors duration-300"; }
         }
 
         function aplicarMesclasEmLote() { Object.assign(dicionarioMescla, mesclasEmLote); localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); fecharModalIA(); iniciarCruzamento(); }
@@ -816,16 +772,16 @@
             let isM = aba === 'mesclas';
             document.getElementById('conteudoMesclas').classList.toggle('hidden', !isM);
             document.getElementById('conteudoExclusoes').classList.toggle('hidden', isM);
-            document.getElementById('abaMesclas').className = isM ? "px-4 py-2 text-sm font-semibold rounded-lg bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 transition-colors" : "px-4 py-2 text-sm font-semibold rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer";
-            document.getElementById('abaExclusoes').className = !isM ? "px-4 py-2 text-sm font-semibold rounded-lg bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 transition-colors" : "px-4 py-2 text-sm font-semibold rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer";
+            document.getElementById('abaMesclas').className = isM ? "px-4 py-2 text-sm font-semibold rounded-lg bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 transition-colors" : "px-4 py-2 text-sm font-semibold rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer";
+            document.getElementById('abaExclusoes').className = !isM ? "px-4 py-2 text-sm font-semibold rounded-lg bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 transition-colors" : "px-4 py-2 text-sm font-semibold rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer";
         }
         
         function renderizarRegrasMescla() {
             let tbody = document.getElementById('tbodyRegras'); tbody.innerHTML = ''; let chaves = Object.keys(dicionarioMescla);
-            if(chaves.length === 0) { tbody.innerHTML = '<tr><td class="p-6 text-center text-gray-400 dark:text-gray-500">Sem correlações feitas.</td></tr>'; return; }
+            if(chaves.length === 0) { tbody.innerHTML = '<tr><td class="p-6 text-center text-slate-400 dark:text-slate-500">Sem correlações feitas.</td></tr>'; return; }
             chaves.forEach(origem => {
                 let tr = document.createElement('tr');
-                tr.innerHTML = `<td class="p-3 text-sm text-gray-600 dark:text-gray-300">${origem} <span class="mx-2 text-gray-300 dark:text-gray-600">➔</span> <span class="font-semibold text-gray-900 dark:text-white">${dicionarioMescla[origem]}</span></td><td class="p-3 text-right"><button onclick="removerMescla('${origem}')" class="text-red-500 font-semibold text-xs hover:bg-red-50 dark:hover:bg-red-900/30 px-3 py-1.5 rounded transition">Desfazer</button></td>`;
+                tr.innerHTML = `<td class="p-3 text-sm text-slate-600 dark:text-slate-300">${origem} <span class="mx-2 text-slate-300 dark:text-slate-600">➔</span> <span class="font-semibold text-slate-900 dark:text-white">${dicionarioMescla[origem]}</span></td><td class="p-3 text-right"><button onclick="removerMescla('${origem}')" class="text-red-500 font-semibold text-xs hover:bg-red-50 dark:hover:bg-red-900/30 px-3 py-1.5 rounded transition-colors duration-300">Desfazer</button></td>`;
                 tbody.appendChild(tr);
             });
         }
@@ -833,15 +789,15 @@
         function renderizarListaExclusoes() {
             let tbodyA = document.getElementById('tbodyExcluidosA'); let tbodyB = document.getElementById('tbodyExcluidosB');
             tbodyA.innerHTML = ''; tbodyB.innerHTML = '';
-            exclusoes.A.forEach(item => tbodyA.innerHTML += `<tr><td class="p-3 text-sm flex justify-between items-center text-gray-600 dark:text-gray-300"><span>${item}</span> <button onclick="restaurarExclusao('${item}', 'A')" class="text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-2 py-1 rounded font-medium transition">Voltar</button></td></tr>`);
-            exclusoes.B.forEach(item => tbodyB.innerHTML += `<tr><td class="p-3 text-sm flex justify-between items-center text-gray-600 dark:text-gray-300"><span>${item}</span> <button onclick="restaurarExclusao('${item}', 'B')" class="text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-2 py-1 rounded font-medium transition">Voltar</button></td></tr>`);
+            exclusoes.A.forEach(item => tbodyA.innerHTML += `<tr><td class="p-3 text-sm flex justify-between items-center text-slate-600 dark:text-slate-300"><span>${item}</span> <button onclick="restaurarExclusao('${item}', 'A')" class="text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-2 py-1 rounded font-medium transition-colors duration-300">Voltar</button></td></tr>`);
+            exclusoes.B.forEach(item => tbodyB.innerHTML += `<tr><td class="p-3 text-sm flex justify-between items-center text-slate-600 dark:text-slate-300"><span>${item}</span> <button onclick="restaurarExclusao('${item}', 'B')" class="text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-2 py-1 rounded font-medium transition-colors duration-300">Voltar</button></td></tr>`);
         }
         
         function removerMescla(origem) { delete dicionarioMescla[origem]; localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); renderizarRegrasMescla(); }
         function restaurarExclusao(item, lado) { exclusoes[lado] = exclusoes[lado].filter(i => i !== item); localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes)); renderizarListaExclusoes(); }
         function limparTodaMemoria() { if(confirm("Apagar TODAS as memórias de correlação e exclusão?")) { dicionarioMescla = {}; exclusoes = { A: [], B: [] }; localStorage.clear(); renderizarRegrasMescla(); renderizarListaExclusoes(); } }
 
-        // --- ARQUIVOS (Onde a IA começa a ler) ---
+        // --- ARQUIVOS ---
         document.getElementById('fileA').addEventListener('change', e => lerArquivoExcel(e.target.files[0], 'A'));
         document.getElementById('fileB').addEventListener('change', e => lerArquivoExcel(e.target.files[0], 'B'));
         
