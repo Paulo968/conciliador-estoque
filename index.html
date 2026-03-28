@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conciliador de Estoque PRO v7</title>
+    <!-- Configuração do Tailwind para Dark Mode via Classe -->
+    <script>
+        tailwind = { config: { darkMode: 'class' } }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; padding-bottom: 60px; transition: background-color 0.3s, color 0.3s; }
+        
+        /* Tabela Responsiva e Sticky Header */
+        .table-container { max-width: 100vw; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        th { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(8px); }
+        
+        /* Badges Modernos */
+        .badge { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+        .badge-ok { background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+        .badge-sobra { background-color: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+        .badge-falta { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+        /* Dark Mode Badges Adjustments */
+        .dark .badge-ok { background-color: rgba(5, 150, 105, 0.2); color: #34d399; border-color: rgba(5, 150, 105, 0.5); }
+        .dark .badge-sobra { background-color: rgba(217, 119, 6, 0.2); color: #fbbf24; border-color: rgba(217, 119, 6, 0.5); }
+        .dark .badge-falta { background-color: rgba(220, 38, 38, 0.2); color: #f87171; border-color: rgba(220, 38, 38, 0.5); }
+
+        /* Botões de Ação */
+        .btn-acao { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 0.375rem; transition: all 0.2s; cursor: pointer; border: 1px solid transparent; }
+        
+        .light .btn-acao { color: #6b7280; }
+        .light .btn-acao:hover { background-color: #f3f4f6; color: #111827; }
+        .light .btn-link:hover { color: #4f46e5; background-color: #e0e7ff; }
+        .light .btn-del:hover { color: #ef4444; background-color: #fee2e2; }
+
+        .dark .btn-acao { color: #9ca3af; }
+        .dark .btn-acao:hover { background-color: #374151; color: #f3f4f6; }
+        .dark .btn-link:hover { color: #818cf8; background-color: rgba(79, 70, 229, 0.3); }
+        .dark .btn-del:hover { color: #f87171; background-color: rgba(239, 68, 68, 0.2); }
+
+        .linha-selecionada { outline: 2px solid #6366f1; z-index: 5; position: relative; }
+        .light .linha-selecionada { background-color: #e0e7ff !important; }
+        .dark .linha-selecionada { background-color: rgba(79, 70, 229, 0.2) !important; }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #4b5563; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-900 dark:bg-gray-950 dark:text-gray-100 transition-colors duration-200">
+
+    <!-- Input escondido para importar backup JSON -->
+    <input type="file" id="fileImportBackup" accept=".json" class="hidden" onchange="processarImportacaoBackup(event)">
+
+    <div class="max-w-[1500px] mx-auto space-y-6 p-2 md:p-6">
+        
+        <!-- Header SaaS -->
+        <header class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-5 flex flex-col md:flex-row justify-between items-center gap-4 transition-colors">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-600 p-2 rounded-lg text-white shadow-md">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Conciliador PRO</h1>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm">Auditoria inteligente de estoque</p>
+                </div>
+            </div>
+            <div class="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+                <button onclick="toggleDarkMode()" class="px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition" title="Alternar Tema">
+                    <svg id="icon-sun" class="w-5 h-5 hidden dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                    <svg id="icon-moon" class="w-5 h-5 block dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                </button>
+                <button onclick="abrirManual()" class="px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition shadow-sm text-sm flex items-center justify-center gap-2 whitespace-nowrap">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                    Manual
+                </button>
+                <button onclick="carregarDadosTeste()" class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition shadow-sm text-sm whitespace-nowrap">
+                    Carregar Teste
+                </button>
+                <button onclick="abrirGerenciador()" class="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 font-medium rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition shadow-sm text-sm flex items-center justify-center gap-2 whitespace-nowrap">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    Memória / Aprendizado
+                </button>
+            </div>
+        </header>
+
+        <!-- Controles Principais -->
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-5 transition-colors">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Upload A -->
+                <div>
+                    <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <span class="w-3 h-3 rounded-full bg-emerald-500"></span> Estoque A (Sistema 1)
+                    </label>
+                    <div class="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                        <input type="file" id="fileA" accept=".xlsx, .xls, .csv" class="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 dark:file:bg-emerald-900/30 file:text-emerald-700 dark:file:text-emerald-400 hover:file:bg-emerald-100 dark:hover:file:bg-emerald-900/50 cursor-pointer outline-none transition-colors"/>
+                    </div>
+                </div>
+                <!-- Upload B -->
+                <div>
+                    <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <span class="w-3 h-3 rounded-full bg-blue-500"></span> Estoque B (Sistema 2)
+                    </label>
+                    <div class="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                        <input type="file" id="fileB" accept=".xlsx, .xls, .csv" class="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-400 hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50 cursor-pointer outline-none transition-colors"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3">
+                <button onclick="iniciarCruzamento()" class="flex-1 bg-gray-900 dark:bg-indigo-600 hover:bg-gray-800 dark:hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-lg shadow-sm transition flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                    Processar Auditoria
+                </button>
+                <button onclick="buscarSugestoesIA()" id="btnIA" class="hidden flex-1 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/40 font-semibold py-3 px-6 rounded-lg shadow-sm transition flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5 text-amber-500 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                    Buscar Similares via IA
+                </button>
+            </div>
+        </div>
+
+        <!-- Tabela -->
+        <div id="areaTabela" class="hidden">
+            <!-- 🟢 NOVO: Dashboard de KPIs (Resumo Analítico) -->
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+                <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex items-center justify-between shadow-sm transition-colors">
+                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">Total Produtos</span>
+                    <span class="text-lg font-bold text-gray-900 dark:text-white" id="kpiTotal">0</span>
+                </div>
+                <div class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 rounded-lg p-3 flex items-center justify-between shadow-sm transition-colors">
+                    <span class="text-xs font-semibold text-emerald-700 dark:text-emerald-400">Bateu (OK)</span>
+                    <span class="text-lg font-bold text-emerald-700 dark:text-emerald-400" id="kpiOk">0</span>
+                </div>
+                <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/50 rounded-lg p-3 flex items-center justify-between shadow-sm transition-colors">
+                    <span class="text-xs font-semibold text-amber-700 dark:text-amber-400">Divergências</span>
+                    <span class="text-lg font-bold text-amber-700 dark:text-amber-400" id="kpiDiv">0</span>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex items-center justify-between shadow-sm transition-colors">
+                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">Só no A</span>
+                    <span class="text-lg font-bold text-gray-700 dark:text-gray-300" id="kpiSoA">0</span>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex items-center justify-between shadow-sm transition-colors">
+                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">Só no B</span>
+                    <span class="text-lg font-bold text-gray-700 dark:text-gray-300" id="kpiSoB">0</span>
+                </div>
+            </div>
+
+            <div class="table-container bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 transition-colors">
+                <table class="w-full min-w-[1100px] text-sm text-left whitespace-nowrap" id="tabelaPrincipal">
+                    <thead>
+                        <tr class="border-b border-gray-200 dark:border-gray-800">
+                            <th colspan="4" class="p-3 text-center text-gray-800 dark:text-gray-200 font-bold border-r border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-2"></span> LADO A
+                            </th>
+                            <th class="p-3 text-center text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-widest bg-gray-100 dark:bg-gray-900 w-32 border-r border-gray-200 dark:border-gray-800">Status</th>
+                            <th colspan="4" class="p-3 text-center text-gray-800 dark:text-gray-200 font-bold bg-gray-50 dark:bg-gray-800/50">
+                                <span class="w-2 h-2 rounded-full bg-blue-500 inline-block mr-2"></span> LADO B
+                            </th>
+                        </tr>
+                        <tr class="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider border-b-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+                            <th class="p-3 w-16 text-center">Ações</th>
+                            <th class="p-3 min-w-[200px]">Produto (A)</th>
+                            <th class="p-3 w-12 text-center">UM</th>
+                            <th class="p-3 w-20 text-right border-r border-gray-200 dark:border-gray-800">Qtd</th>
+                            
+                            <th class="p-3 text-center bg-gray-50 dark:bg-gray-800/30 border-r border-gray-200 dark:border-gray-800">Resultado</th>
+                            
+                            <th class="p-3 w-16 text-center">Ações</th>
+                            <th class="p-3 min-w-[200px]">Produto (B)</th>
+                            <th class="p-3 w-12 text-center">UM</th>
+                            <th class="p-3 w-20 text-right">Qtd</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyMatriz" class="divide-y divide-gray-100 dark:divide-gray-800"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🟢 TOAST FLUTUANTE DE CORRELAÇÃO -->
+    <div id="barraCorrelação" class="fixed top-6 left-1/2 transform -translate-x-1/2 -translate-y-24 opacity-0 bg-gray-900 dark:bg-indigo-900 text-white px-6 py-4 rounded-xl shadow-2xl transition-all duration-300 z-50 flex items-center gap-4 border border-gray-700 dark:border-indigo-700 pointer-events-none">
+        <div class="bg-indigo-500/20 p-2 rounded-full">
+            <svg class="w-6 h-6 text-indigo-400 dark:text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
+        </div>
+        <div>
+            <p class="font-bold text-sm">Selecione o par para:</p>
+            <p class="text-indigo-300 dark:text-indigo-200 font-mono text-xs mt-0.5 truncate max-w-[250px]" id="nomeSelecionado"></p>
+        </div>
+        <button onclick="cancelarCorrelação()" class="ml-4 bg-gray-700 dark:bg-indigo-800 hover:bg-gray-600 dark:hover:bg-indigo-700 text-white text-xs font-bold py-1.5 px-3 rounded pointer-events-auto transition">
+            Cancelar
+        </button>
+    </div>
+
+    <!-- 🟢 Modal do Manual de Uso Embutido -->
+    <div id="manualModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-gray-900 p-6 md:p-8 rounded-2xl shadow-xl max-w-4xl w-full flex flex-col h-[90vh] border border-gray-100 dark:border-gray-700 transition-colors">
+            
+            <!-- Cabeçalho do Modal -->
+            <div class="flex justify-between items-center mb-4 border-b border-gray-200 dark:border-gray-700 pb-4">
+                <h3 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <svg class="w-6 h-6 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                    Manual do Usuário
+                </h3>
+                <button onclick="fecharManual()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg p-2 transition">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            
+            <!-- Corpo do Manual -->
+            <div class="overflow-y-auto flex-1 pr-2 space-y-6 text-gray-700 dark:text-gray-300 text-sm md:text-base leading-relaxed">
+                
+                <p>Bem-vindo ao <strong>Conciliador de Estoque PRO</strong>. Este sistema foi desenvolvido para auditar, limpar e cruzar dados de duas fontes de estoque diferentes de forma rápida, rodando diretamente no seu navegador.</p>
+
+                <section>
+                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2">1. 📝 Preparação e Formatos Aceitos</h4>
+                    <p class="mb-2">O sistema é compatível com exportações de qualquer ERP (SAP, TOTVS, etc), aceitando os seguintes formatos:</p>
+                    <ul class="list-disc pl-6 space-y-1 mb-4">
+                        <li><strong>.xlsx</strong> (Excel moderno)</li>
+                        <li><strong>.xls</strong> (Excel antigo)</li>
+                        <li><strong>.csv</strong> (Valores separados por vírgula)</li>
+                    </ul>
+                    <p class="mb-2">Para que o sistema consiga ler as suas planilhas, elas precisam ter cabeçalhos na primeira linha. O sistema procura por palavras-chave:</p>
+                    <ul class="list-disc pl-6 space-y-1">
+                        <li><strong>Descrição do Produto:</strong> <code>Desc</code>, <code>Nome</code> ou <code>Prod</code>. <em>(Obrigatório)</em></li>
+                        <li><strong>Quantidade:</strong> <code>Qtd</code>, <code>Quant</code> ou <code>Saldo</code>. <em>(Obrigatório)</em></li>
+                        <li><strong>Código:</strong> <code>Cod</code> ou <code>Código</code>. <em>(Opcional)</em></li>
+                        <li><strong>Unidade de Medida:</strong> <code>UM</code>, <code>Unid</code> ou <code>Medida</code>. <em>(Opcional)</em></li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2">2. 🚀 Fluxo de Trabalho Básico</h4>
+                    <ol class="list-decimal pl-6 space-y-2">
+                        <li><strong>Upload:</strong> Selecione as planilhas do Estoque A (Esquerdo) e Estoque B (Direito).</li>
+                        <li><strong>Processar Auditoria:</strong> Clique no botão escuro.</li>
+                        <li><strong>Mágica Automática:</strong> O sistema remove acentos, joga para maiúsculo, limpa zeros inúteis, exclui automaticamente "BICO" e "FILTRO" e une itens com 90% ou mais de semelhança sem te perguntar nada.</li>
+                    </ol>
+                </section>
+
+                <section>
+                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2">3. 📊 Entendendo o Dashboard</h4>
+                    <ul class="list-disc pl-6 space-y-1">
+                        <li><strong class="text-emerald-600 dark:text-emerald-400">🟢 Bateu (OK):</strong> Produtos existem nos dois lados e a quantidade é exatamente igual.</li>
+                        <li><strong class="text-amber-600 dark:text-amber-400">🟠 Divergências:</strong> Existem nos dois lados, mas as quantidades não batem.</li>
+                        <li><strong>⚪ Só no A / Só no B:</strong> Produtos isolados em apenas um dos sistemas (erro de cadastro, etc).</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2">4. 🛠️ Ações Manuais (Botões na Tabela)</h4>
+                    <ul class="space-y-4">
+                        <li>
+                            <strong class="flex items-center gap-2">🔗 Botão de Correlação (Unir):</strong> 
+                            Clique no botão de link do primeiro produto. Uma barra roxa aparecerá no topo da tela. Em seguida, clique no link do segundo produto. Eles se fundem e as quantidades cruzam na mesma hora.
+                        </li>
+                        <li>
+                            <strong class="flex items-center gap-2">🗑️ Botão de Exclusão:</strong> 
+                            Serve para limpar lixo de um lado específico. Clicando nele, o produto some daquele lado, mas se existir do outro, continua intacto.
+                        </li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2">5. ✨ Assistente de IA em Lote</h4>
+                    <p>Ao clicar no botão amarelo <strong>"Buscar Similares via IA"</strong>, o sistema procura itens que são parecidos (60% a 87%). Na janela que abrir, clique em <strong>Unir Pares</strong> naqueles que fizerem sentido e depois clique em <strong>Aplicar Selecionados</strong>. O trabalho de 1 hora é feito em 10 segundos.</p>
+                </section>
+
+                <section>
+                    <h4 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-2">6. 🧠 Memória e Cloud Backup</h4>
+                    <ul class="list-disc pl-6 space-y-3">
+                        <li>
+                            <strong>Desfazer Correlações (Mesmo lado ou Lados opostos):</strong> 
+                            Juntou os produtos errados? Não tem problema. No botão <em>Memória / Aprendizado</em> no topo da tela, acesse a aba "Correlações" e clique em <strong>Desfazer</strong>. O sistema preserva os dados originais e vai separar os produtos imediatamente, seja uma união do Lado A com Lado B, ou de dois produtos duplicados dentro do próprio Lado A.
+                        </li>
+                        <li>
+                            <strong>Restaurar Exclusões:</strong> Na aba "Exclusões" dentro da Memória, você pode trazer de volta (clicando em "Voltar") qualquer item que tenha excluído da tabela por engano.
+                        </li>
+                        <li>
+                            <strong>Exportar/Importar Backup:</strong> Vai usar outro computador amanhã? Exporte o backup e importe novamente no outro PC. Toda a inteligência de regras será mantida.
+                        </li>
+                    </ul>
+                </section>
+
+            </div>
+            
+            <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+                <button onclick="fecharManual()" class="bg-indigo-600 text-white px-8 py-2.5 rounded-lg font-bold hover:bg-indigo-700 transition shadow">Entendi, fechar!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modais de Regras e Backup de Documento -->
+    <div id="regrasModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-xl max-w-4xl w-full flex flex-col h-[85vh] border border-gray-100 dark:border-gray-700 transition-colors">
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">Memória de Aprendizado</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Gerencie regras ou faça Backup do documento para usar em outro PC/GitHub.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="exportarBackup()" class="text-xs bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 px-3 py-2 rounded-lg font-semibold transition border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg> Exportar Backup
+                    </button>
+                    <button onclick="document.getElementById('fileImportBackup').click()" class="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 px-3 py-2 rounded-lg font-semibold transition border border-blue-200 dark:border-blue-800 flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg> Importar Backup
+                    </button>
+                    <button onclick="limparTodaMemoria()" class="text-xs bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 px-3 py-2 rounded-lg font-semibold transition border border-red-200 dark:border-red-800">Zerar</button>
+                </div>
+            </div>
+
+            <div class="flex gap-2 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+                <button onclick="mudarAba('mesclas')" id="abaMesclas" class="px-4 py-2 text-sm font-semibold rounded-lg bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 transition-colors">Correlações</button>
+                <button onclick="mudarAba('exclusoes')" id="abaExclusoes" class="px-4 py-2 text-sm font-semibold rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Exclusões</button>
+            </div>
+            
+            <div id="conteudoMesclas" class="overflow-y-auto flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-2 transition-colors">
+                <table class="w-full text-sm text-left"><tbody id="tbodyRegras" class="divide-y divide-gray-100 dark:divide-gray-700"></tbody></table>
+            </div>
+            <div id="conteudoExclusoes" class="overflow-y-auto flex-1 hidden flex flex-col md:flex-row gap-4">
+                <div class="flex-1 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden bg-white dark:bg-gray-800 transition-colors"><div class="bg-gray-50 dark:bg-gray-900 p-3 border-b border-gray-200 dark:border-gray-700 text-sm font-bold text-gray-700 dark:text-gray-300">A - Excluídos</div><table class="w-full text-sm"><tbody id="tbodyExcluidosA" class="divide-y divide-gray-100 dark:divide-gray-700"></tbody></table></div>
+                <div class="flex-1 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden bg-white dark:bg-gray-800 transition-colors"><div class="bg-gray-50 dark:bg-gray-900 p-3 border-b border-gray-200 dark:border-gray-700 text-sm font-bold text-gray-700 dark:text-gray-300">B - Excluídos</div><table class="w-full text-sm"><tbody id="tbodyExcluidosB" class="divide-y divide-gray-100 dark:divide-gray-700"></tbody></table></div>
+            </div>
+            <div class="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+                <button onclick="fecharGerenciador()" class="bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition shadow">Concluir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal IA Lote -->
+    <div id="aiModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-xl max-w-3xl w-full flex flex-col h-[80vh] border border-gray-100 dark:border-gray-700 transition-colors">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1">Sugestões de IA</h3>
+            <p class="text-gray-500 dark:text-gray-400 mb-6 text-sm">Afinidade configurada: 60% a 87%.</p>
+            <div class="overflow-y-auto flex-1 space-y-3 pr-2" id="aiSugestoesLista"></div>
+            <div class="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex gap-3 justify-end">
+                <button onclick="fecharModalIA()" class="text-gray-600 dark:text-gray-400 px-4 py-2 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition">Cancelar</button>
+                <button onclick="aplicarMesclasEmLote()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition shadow">Aplicar Selecionados</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ícones SVG -->
+    <svg style="display: none;">
+        <symbol id="icon-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+        </symbol>
+        <symbol id="icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+        </symbol>
+    </svg>
+
+    <script>
+        // --- 1. DARK MODE TOGGLE ---
+        function toggleDarkMode() {
+            const htmlClasses = document.documentElement.classList;
+            if (htmlClasses.contains('dark')) {
+                htmlClasses.remove('dark');
+                htmlClasses.add('light');
+                localStorage.setItem('theme', 'light');
+            } else {
+                htmlClasses.add('dark');
+                htmlClasses.remove('light');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+        // Verificar preferência salva
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.add('light');
+        }
+
+        // --- 2. BACKUP E IMPORTAÇÃO DE DOCUMENTO (GITHUB PAGES SUPPORT) ---
+        function exportarBackup() {
+            const dadosBackup = {
+                dicionarioMescla: dicionarioMescla,
+                exclusoes: exclusoes,
+                dataExportacao: new Date().toISOString()
+            };
+            const jsonString = JSON.stringify(dadosBackup, null, 2);
+            const blob = new Blob([jsonString], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Memoria_Conciliador_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function processarImportacaoBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if(data.dicionarioMescla && data.exclusoes) {
+                        dicionarioMescla = data.dicionarioMescla;
+                        exclusoes = data.exclusoes;
+                        localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla));
+                        localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes));
+                        
+                        alert("✅ Documento de Memória importado com sucesso!");
+                        renderizarRegrasMescla();
+                        renderizarListaExclusoes();
+                        iniciarCruzamento();
+                    } else {
+                        alert("❌ Arquivo JSON inválido ou corrompido.");
+                    }
+                } catch (err) {
+                    alert("❌ Erro ao ler o arquivo: " + err.message);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // Reseta o input
+        }
+
+        // --- MEMÓRIA ---
+        let dadosRawA = [];
+        let dadosRawB = [];
+        let dicionarioMescla = JSON.parse(localStorage.getItem('dicMesclaV6')) || {};
+        let exclusoes = JSON.parse(localStorage.getItem('exclusoesV6')) || { A: [], B: [] };
+        const palavrasExcluidasFixas = ["BICO", "FILTRO"]; 
+        
+        let produtoAguardandoCorrelacao = null; 
+        let idLinhaAguardando = null; 
+        let mesclasEmLote = {}; 
+
+        // --- UTILITÁRIOS ---
+        function normalizarTexto(texto) {
+            if (!texto) return "";
+            return String(texto).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim().replace(/\s+/g, ' ');
+        }
+        function normalizarNumero(valor) {
+            if (!valor) return 0;
+            let n = +parseFloat(valor).toFixed(3);
+            return isNaN(n) ? 0 : n;
+        }
+
+        // --- IA SIMILARIDADE ---
+        function calcularSimilaridade(s1, s2) {
+            if (s1 === s2) return 1.0;
+            if (s1.length < 2 || s2.length < 2) return 0.0;
+            let bigrams1 = new Map();
+            for (let i = 0; i < s1.length - 1; i++) { const big = s1.substr(i, 2); bigrams1.set(big, (bigrams1.get(big) || 0) + 1); }
+            let intersection = 0;
+            for (let i = 0; i < s2.length - 1; i++) {
+                const big = s2.substr(i, 2); const count = bigrams1.get(big);
+                if (count > 0) { intersection++; bigrams1.set(big, count - 1); }
+            }
+            return (2.0 * intersection) / (s1.length + s2.length - 2);
+        }
+
+        // --- ETL ---
+        function aplicarDicionario(nomeNormalizado) {
+            let atual = nomeNormalizado; let maxLoops = 10;
+            while (dicionarioMescla[atual] && maxLoops > 0) { atual = dicionarioMescla[atual]; maxLoops--; }
+            return atual;
+        }
+
+        function estruturarLado(dadosBrutos, idLado) {
+            let mapa = {};
+            dadosBrutos.forEach(linha => {
+                let chaves = Object.keys(linha);
+                let cCod = chaves.find(k => /cod|código/i.test(k)); let cDesc = chaves.find(k => /desc|prod|nome/i.test(k));
+                let cQtd = chaves.find(k => /qtd|quant|saldo/i.test(k)); let cUM = chaves.find(k => /um|unid|medida/i.test(k));
+
+                if (!cDesc) return;
+                let original = linha[cDesc]; let normal = normalizarTexto(original); let qtd = normalizarNumero(linha[cQtd]);
+                let codigoAtual = cCod && linha[cCod] !== undefined && linha[cCod] !== "" ? String(linha[cCod]).trim() : "-";
+
+                if (palavrasExcluidasFixas.some(p => normal.includes(p))) return;
+                let finalDesc = aplicarDicionario(normal);
+                if (exclusoes[idLado].includes(finalDesc)) return;
+
+                if (mapa[finalDesc]) { 
+                    mapa[finalDesc].qtd += qtd; 
+                    // Lógica de Rastreabilidade: Concatena os códigos diferentes
+                    if (codigoAtual !== "-") {
+                        let codigosSalvos = mapa[finalDesc].codigo.split(" / ");
+                        if (!codigosSalvos.includes(codigoAtual)) {
+                            if (mapa[finalDesc].codigo === "-") mapa[finalDesc].codigo = codigoAtual;
+                            else mapa[finalDesc].codigo += " / " + codigoAtual;
+                        }
+                    }
+                } 
+                else { 
+                    mapa[finalDesc] = { codigo: codigoAtual, descOriginal: original, um: cUM ? linha[cUM] : "UN", qtd: qtd }; 
+                }
+            });
+            return mapa;
+        }
+
+        // --- CRUZAMENTO ---
+        function iniciarCruzamento() {
+            if (dadosRawA.length === 0 && dadosRawB.length === 0) return;
+
+            let dictA = estruturarLado(dadosRawA, 'A'); let dictB = estruturarLado(dadosRawB, 'B');
+            let keysA = Object.keys(dictA); let keysB = Object.keys(dictB); let auto = 0;
+            
+            keysA.filter(k => !keysB.includes(k)).forEach(itemA => {
+                keysB.filter(k => !keysA.includes(k)).forEach(itemB => {
+                    if (!dicionarioMescla[itemA] && !dicionarioMescla[itemB] && calcularSimilaridade(itemA, itemB) >= 0.88) {
+                        dicionarioMescla[itemA] = itemB; auto++;
+                    }
+                });
+            });
+
+            if (auto > 0) {
+                localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla));
+                dictA = estruturarLado(dadosRawA, 'A'); dictB = estruturarLado(dadosRawB, 'B');
+            }
+
+            let todasChaves = new Set([...Object.keys(dictA), ...Object.keys(dictB)]);
+            let listaOrdenada = Array.from(todasChaves).sort();
+
+            renderizarMatriz(listaOrdenada, dictA, dictB);
+            document.getElementById('btnIA').classList.remove('hidden');
+        }
+
+        function renderizarMatriz(listaOrdenada, dictA, dictB) {
+            const tbody = document.getElementById('tbodyMatriz');
+            tbody.innerHTML = '';
+            document.getElementById('areaTabela').classList.remove('hidden');
+
+            // 🟢 NOVO: Variáveis para contar os KPIs
+            let contOk = 0, contDiv = 0, contSoA = 0, contSoB = 0;
+
+            listaOrdenada.forEach((descFinal, index) => {
+                let itemA = dictA[descFinal]; let itemB = dictB[descFinal];
+                let qA = itemA ? itemA.qtd : 0; let qB = itemB ? itemB.qtd : 0;
+                let diff = normalizarNumero(qA - qB);
+
+                let tr = document.createElement('tr');
+                let idTr = `row-${index}`;
+                tr.id = idTr;
+                tr.className = "hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors";
+
+                let statusHtml = "";
+                // 🟢 NOVO: Contabilizando os status matematicamente
+                if (diff === 0) { statusHtml = `<span class="badge badge-ok">Bateu</span>`; contOk++; }
+                else if (qA === 0) { statusHtml = `<span class="badge badge-falta">Só no B</span>`; contSoB++; }
+                else if (qB === 0) { statusHtml = `<span class="badge badge-sobra">Só no A</span>`; contSoA++; }
+                else if (diff > 0) { statusHtml = `<span class="badge badge-sobra">+${diff} no A</span>`; contDiv++; }
+                else { statusHtml = `<span class="badge badge-falta">${diff} no A</span>`; contDiv++; }
+
+                let iconLink = `<svg class="w-4 h-4"><use href="#icon-link"></use></svg>`;
+                let iconTrash = `<svg class="w-4 h-4"><use href="#icon-trash"></use></svg>`;
+
+                let acoesA = itemA ? 
+                    `<div class="flex gap-1 justify-center">
+                        <button onclick="cliqueBotaoCorrelacionar('${descFinal}', '${idTr}')" class="btn-acao btn-link" title="Correlacionar">${iconLink}</button>
+                        <button onclick="excluirManual('${descFinal}', 'A')" class="btn-acao btn-del" title="Excluir do A">${iconTrash}</button>
+                    </div>` : '';
+                
+                let acoesB = itemB ? 
+                    `<div class="flex gap-1 justify-center">
+                        <button onclick="cliqueBotaoCorrelacionar('${descFinal}', '${idTr}')" class="btn-acao btn-link" title="Correlacionar">${iconLink}</button>
+                        <button onclick="excluirManual('${descFinal}', 'B')" class="btn-acao btn-del" title="Excluir do B">${iconTrash}</button>
+                    </div>` : '';
+
+                tr.innerHTML = `
+                    <td class="p-3 text-gray-500 dark:text-gray-400">${acoesA}</td>
+                    <td class="p-3 font-medium text-gray-900 dark:text-gray-200">${itemA ? itemA.descOriginal : '<span class="text-gray-300 dark:text-gray-600">-</span>'}</td>
+                    <td class="p-3 text-center text-gray-500 dark:text-gray-400">${itemA ? itemA.um : '-'}</td>
+                    <td class="p-3 text-right font-bold text-gray-900 dark:text-gray-200 border-r border-gray-200 dark:border-gray-800">${itemA ? itemA.qtd : '-'}</td>
+
+                    <td class="p-3 text-center bg-gray-50 dark:bg-gray-800/30 border-r border-gray-200 dark:border-gray-800">${statusHtml}</td>
+
+                    <td class="p-3 text-gray-500 dark:text-gray-400">${acoesB}</td>
+                    <td class="p-3 font-medium text-gray-900 dark:text-gray-200">${itemB ? itemB.descOriginal : '<span class="text-gray-300 dark:text-gray-600">-</span>'}</td>
+                    <td class="p-3 text-center text-gray-500 dark:text-gray-400">${itemB ? itemB.um : '-'}</td>
+                    <td class="p-3 text-right font-bold text-gray-900 dark:text-gray-200">${itemB ? itemB.qtd : '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // 🟢 NOVO: Atualiza os números no HTML do Dashboard após varrer a lista
+            document.getElementById('kpiTotal').innerText = listaOrdenada.length;
+            document.getElementById('kpiOk').innerText = contOk;
+            document.getElementById('kpiDiv').innerText = contDiv;
+            document.getElementById('kpiSoA').innerText = contSoA;
+            document.getElementById('kpiSoB').innerText = contSoB;
+        }
+
+        // --- CORRELAÇÃO MANUAL ---
+        function cliqueBotaoCorrelacionar(nomeProduto, idTr) {
+            if (!produtoAguardandoCorrelacao) {
+                produtoAguardandoCorrelacao = nomeProduto;
+                idLinhaAguardando = idTr;
+                
+                document.getElementById(idTr).classList.add('linha-selecionada');
+                document.getElementById('nomeSelecionado').innerText = nomeProduto;
+                
+                let barra = document.getElementById('barraCorrelação');
+                barra.classList.remove('opacity-0', '-translate-y-24', 'pointer-events-none');
+                barra.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
+            } 
+            else {
+                let origem = produtoAguardandoCorrelacao; let destino = nomeProduto;
+                if (origem !== destino) {
+                    dicionarioMescla[origem] = destino;
+                    localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla));
+                }
+                cancelarCorrelação();
+                if (origem !== destino) iniciarCruzamento();
+            }
+        }
+
+        function cancelarCorrelação() {
+            if (idLinhaAguardando) { let linha = document.getElementById(idLinhaAguardando); if(linha) linha.classList.remove('linha-selecionada'); }
+            produtoAguardandoCorrelacao = null; idLinhaAguardando = null;
+            let barra = document.getElementById('barraCorrelação');
+            barra.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
+            barra.classList.add('opacity-0', '-translate-y-24', 'pointer-events-none');
+        }
+
+        function excluirManual(descFinal, lado) {
+            if (!exclusoes[lado].includes(descFinal)) { exclusoes[lado].push(descFinal); localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes)); iniciarCruzamento(); }
+        }
+
+        // --- IA EM LOTE ---
+        function buscarSugestoesIA() {
+            let container = document.getElementById('aiSugestoesLista');
+            mesclasEmLote = {}; document.getElementById('aiModal').classList.remove('hidden');
+            container.innerHTML = '<div class="p-8 flex justify-center"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>';
+
+            setTimeout(() => {
+                let dictA = estruturarLado(dadosRawA, 'A'); let dictB = estruturarLado(dadosRawB, 'B');
+                let chavesA = Object.keys(dictA).filter(k => !dictB[k]); let chavesB = Object.keys(dictB).filter(k => !dictA[k]);
+                let sugestoes = [];
+                
+                chavesA.forEach(itemA => {
+                    chavesB.forEach(itemB => {
+                        let score = calcularSimilaridade(itemA, itemB);
+                        if (score >= 0.60 && score < 0.88) sugestoes.push({ itemA, itemB, score });
+                    });
+                });
+                sugestoes.sort((a, b) => b.score - a.score); container.innerHTML = '';
+                if (sugestoes.length === 0) { container.innerHTML = '<p class="text-center text-gray-500 dark:text-gray-400 py-6">Nenhuma similaridade encontrada.</p>'; return; }
+
+                sugestoes.forEach((sug, idx) => {
+                    let div = document.createElement('div'); let idBtn = `btn-batch-${idx}`;
+                    div.className = "bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 hover:border-indigo-200 dark:hover:border-indigo-800 transition";
+                    div.innerHTML = `
+                        <div class="text-sm w-full">
+                            <div class="font-medium text-gray-800 dark:text-gray-200"><span class="text-gray-400 dark:text-gray-500 mr-2">A</span> ${sug.itemA}</div>
+                            <div class="font-medium text-gray-800 dark:text-gray-200 mt-1"><span class="text-gray-400 dark:text-gray-500 mr-2">B</span> ${sug.itemB}</div>
+                            <div class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold mt-2 bg-indigo-50 dark:bg-indigo-900/30 inline-block px-2 py-1 rounded">Afinidade: ${Math.round(sug.score * 100)}%</div>
+                        </div>
+                        <button id="${idBtn}" onclick="agendarMesclaLote('${sug.itemA}', '${sug.itemB}', '${idBtn}')" class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 px-6 py-2 rounded-lg text-sm font-semibold w-full md:w-auto hover:bg-gray-50 dark:hover:bg-gray-600 transition">Unir Pares</button>
+                    `;
+                    container.appendChild(div);
+                });
+            }, 300);
+        }
+
+        function agendarMesclaLote(itemA, itemB, idBtn) {
+            let btn = document.getElementById(idBtn);
+            if (mesclasEmLote[itemA]) { delete mesclasEmLote[itemA]; btn.innerText = "Unir Pares"; btn.className = "bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 px-6 py-2 rounded-lg text-sm font-semibold w-full md:w-auto hover:bg-gray-50 dark:hover:bg-gray-600 transition"; } 
+            else { mesclasEmLote[itemA] = itemB; btn.innerText = "✓ Selecionado"; btn.className = "bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-semibold w-full md:w-auto shadow-md"; }
+        }
+
+        function aplicarMesclasEmLote() { Object.assign(dicionarioMescla, mesclasEmLote); localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); fecharModalIA(); iniciarCruzamento(); }
+        function fecharModalIA() { document.getElementById('aiModal').classList.add('hidden'); }
+
+        // --- CONTROLE DO MANUAL ---
+        function abrirManual() { document.getElementById('manualModal').classList.remove('hidden'); }
+        function fecharManual() { document.getElementById('manualModal').classList.add('hidden'); }
+
+        // --- GERENCIADOR ---
+        function abrirGerenciador() { document.getElementById('regrasModal').classList.remove('hidden'); renderizarRegrasMescla(); renderizarListaExclusoes(); }
+        function fecharGerenciador() { document.getElementById('regrasModal').classList.add('hidden'); iniciarCruzamento(); }
+        
+        function mudarAba(aba) {
+            let isM = aba === 'mesclas';
+            document.getElementById('conteudoMesclas').classList.toggle('hidden', !isM);
+            document.getElementById('conteudoExclusoes').classList.toggle('hidden', isM);
+            document.getElementById('abaMesclas').className = isM ? "px-4 py-2 text-sm font-semibold rounded-lg bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 transition-colors" : "px-4 py-2 text-sm font-semibold rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer";
+            document.getElementById('abaExclusoes').className = !isM ? "px-4 py-2 text-sm font-semibold rounded-lg bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 transition-colors" : "px-4 py-2 text-sm font-semibold rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer";
+        }
+        
+        function renderizarRegrasMescla() {
+            let tbody = document.getElementById('tbodyRegras'); tbody.innerHTML = ''; let chaves = Object.keys(dicionarioMescla);
+            if(chaves.length === 0) { tbody.innerHTML = '<tr><td class="p-6 text-center text-gray-400 dark:text-gray-500">Sem correlações feitas.</td></tr>'; return; }
+            chaves.forEach(origem => {
+                let tr = document.createElement('tr');
+                tr.innerHTML = `<td class="p-3 text-sm text-gray-600 dark:text-gray-300">${origem} <span class="mx-2 text-gray-300 dark:text-gray-600">➔</span> <span class="font-semibold text-gray-900 dark:text-white">${dicionarioMescla[origem]}</span></td><td class="p-3 text-right"><button onclick="removerMescla('${origem}')" class="text-red-500 font-semibold text-xs hover:bg-red-50 dark:hover:bg-red-900/30 px-3 py-1.5 rounded transition">Desfazer</button></td>`;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        function renderizarListaExclusoes() {
+            let tbodyA = document.getElementById('tbodyExcluidosA'); let tbodyB = document.getElementById('tbodyExcluidosB');
+            tbodyA.innerHTML = ''; tbodyB.innerHTML = '';
+            exclusoes.A.forEach(item => tbodyA.innerHTML += `<tr><td class="p-3 text-sm flex justify-between items-center text-gray-600 dark:text-gray-300"><span>${item}</span> <button onclick="restaurarExclusao('${item}', 'A')" class="text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-2 py-1 rounded font-medium transition">Voltar</button></td></tr>`);
+            exclusoes.B.forEach(item => tbodyB.innerHTML += `<tr><td class="p-3 text-sm flex justify-between items-center text-gray-600 dark:text-gray-300"><span>${item}</span> <button onclick="restaurarExclusao('${item}', 'B')" class="text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-2 py-1 rounded font-medium transition">Voltar</button></td></tr>`);
+        }
+        
+        function removerMescla(origem) { delete dicionarioMescla[origem]; localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); renderizarRegrasMescla(); }
+        function restaurarExclusao(item, lado) { exclusoes[lado] = exclusoes[lado].filter(i => i !== item); localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes)); renderizarListaExclusoes(); }
+        function limparTodaMemoria() { if(confirm("Apagar TODAS as memórias de correlação e exclusão?")) { dicionarioMescla = {}; exclusoes = { A: [], B: [] }; localStorage.clear(); renderizarRegrasMescla(); renderizarListaExclusoes(); } }
+
+        // --- ARQUIVOS ---
+        document.getElementById('fileA').addEventListener('change', e => lerArquivoExcel(e.target.files[0], data => dadosRawA = data));
+        document.getElementById('fileB').addEventListener('change', e => lerArquivoExcel(e.target.files[0], data => dadosRawB = data));
+        function lerArquivoExcel(file, callback) { const r = new FileReader(); r.onload = function(e) { const w = XLSX.read(new Uint8Array(e.target.result), {type: 'array'}); callback(XLSX.utils.sheet_to_json(w.Sheets[w.SheetNames[0]])); }; r.readAsArrayBuffer(file); }
+
+        // --- TESTE ---
+        function carregarDadosTeste() {
+            dadosRawA = [ 
+                { Codigo: "101", Descricao: "Oleo Lubrificante Diesel", UM: "LT", Quantidade: 10 }, 
+                { Codigo: "105", Descricao: "Oleo Lubr Diesel", UM: "LT", Quantidade: 2 }, // A IA vai unir com o 101 e concatenar o código
+                { Codigo: "102", Descricao: "Adubo Especial Lado Esquerdo", UM: "KG", Quantidade: 5 } 
+            ];
+            dadosRawB = [ 
+                { Codigo: "201", Descricao: "OLEO LUBRIFICANTE", UM: "LT", Quantidade: 12 }, 
+                { Codigo: "103", Descricao: "Adubo Esp Lado Direito", UM: "KG", Quantidade: 5 } 
+            ];
+            iniciarCruzamento();
+        }
+    </script>
+</body>
+</html>
