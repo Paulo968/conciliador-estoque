@@ -140,7 +140,7 @@
             </div>
 
             <div class="flex flex-wrap gap-4">
-                <button id="btnProcessar" onclick="iniciarCruzamento()" class="flex-1 min-w-[200px] bg-slate-900 dark:bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-xl hover:bg-slate-800 transition-colors uppercase tracking-widest text-xs">Processar Auditoria</button>
+                <button id="btnProcessar" onclick="iniciarCruzamento(true)" class="flex-1 min-w-[200px] bg-slate-900 dark:bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-xl hover:bg-slate-800 transition-colors uppercase tracking-widest text-xs">Processar Auditoria</button>
                 <button onclick="buscarSugestoesIA()" id="btnIA" class="hidden min-w-[200px] bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 font-black py-4 rounded-2xl transition-colors uppercase tracking-widest text-xs">Sugestões Inteligentes</button>
                 <button id="btnExportExcel" onclick="exportarExcelResultado()" class="hidden min-w-[200px] bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-xl hover:bg-emerald-700 transition-colors uppercase tracking-widest text-xs">Baixar Excel (.xlsx)</button>
             </div>
@@ -616,7 +616,7 @@
             return mapa;
         }
 
-        function iniciarCruzamento() {
+        function iniciarCruzamento(exibirFeedback = false) {
             if (dadosRawA.length === 0 && dadosRawB.length === 0) return;
             const btn = document.getElementById('btnProcessar'); btn.innerHTML = `Limpando e Cruzando...`; btn.disabled = true;
             
@@ -662,7 +662,9 @@
                     document.getElementById('btnExportExcel').classList.remove('hidden');
 
                     let endT = performance.now();
-                    mostrarFeedbackModal(statsProcesso, listaFinal.length, (endT - startT));
+                    if (exibirFeedback) {
+                        mostrarFeedbackModal(statsProcesso, listaFinal.length, (endT - startT));
+                    }
 
                 } catch (e) { console.error(e); } finally { btn.innerHTML = `Processar Auditoria`; btn.disabled = false; }
             }, 100);
