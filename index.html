@@ -41,11 +41,15 @@
       background: #1e1e1e;
       border-top: 1px solid #333;
       display: flex;
-      justify-content: space-around;
-      align-items: center;
-      padding: 10px 8px calc(12px + env(safe-area-inset-bottom)) 8px;
-      overflow-x: hidden;
-      gap: 8px;
+      justify-content: space-between;
+      align-items: stretch;
+      padding: 8px 6px calc(10px + env(safe-area-inset-bottom)) 6px;
+      gap: 4px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .bottom-nav::-webkit-scrollbar {
+      display: none;
     }
 
     .nav-item { 
@@ -53,19 +57,26 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 4px;
+      gap: 3px;
       color: #888;
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 600;
-      min-width: 0;
       flex: 1;
+      min-width: 0;
+      padding: 6px 4px;
+      border-radius: 10px;
+      transition: 0.2s;
     }
 
     .nav-item i {
       width: 20px;
       height: 20px;
     }
-    .nav-item.active { color: #3b82f6; }
+
+    .nav-item.active {
+      color: #3b82f6;
+      background: rgba(59, 130, 246, 0.10);
+    }
 
     /* Redução milimétrica para telas pequenas */
     @media (max-width: 420px) {
@@ -1697,7 +1708,7 @@
       applyPermissions: () => {
         const isMotorista = AppState.perfil === 'motorista';
 
-        const hideIds = [
+        const hiddenForMotorista = [
           'tab-fretes',
           'tab-despesas',
           'tab-motoristas',
@@ -1715,23 +1726,39 @@
           'nav-motoristas',
           'nav-caminhoes',
           'nav-historico',
-          
+
           'btn-novo-frete'
         ];
 
+        const hiddenForAdmin = [
+          'side-nav-oleo',
+          'nav-oleo',
+          'tab-oleo'
+        ];
+
         if (isMotorista) {
-          hideIds.forEach(id => {
+          hiddenForMotorista.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.display = 'none';
           });
-          
-          // Blindagem extra no form de abastecimento
+
           ['div-abs-motorista', 'div-abs-adiantamento', 'div-abs-frete', 'div-abs-custo-km'].forEach(id => {
             const el = document.getElementById(id);
-            if(el) el.style.display = 'none';
+            if (el) el.style.display = 'none';
+          });
+
+          // garante que a aba oleo fique visível para motorista
+          ['side-nav-oleo', 'nav-oleo', 'tab-oleo'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = '';
           });
 
           App.setTab('abastecimento');
+        } else {
+          hiddenForAdmin.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+          });
         }
       },
 
