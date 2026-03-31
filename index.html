@@ -1,2274 +1,551 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#1a1a1a">
-  <title>Caderno de Frota Enterprise</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-
-  <!-- Conexão Direta: Supabase MVP -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    const SUPABASE_URL = 'https://rliewmdjpmoahalgrvse.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable__gaU7l2KpsVzFrtmyGc_vQ_SUcT7PNz';
-
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  </script>
-
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
-  <style>
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: #444; }
-
-    body { font-family: 'Inter', sans-serif; background: #121212; color: #e5e5e5; }
-    .glass-card { background: #1e1e1e; border: 1px solid #333; border-radius: 12px; padding: 16px; }
-    .btn-primary { background: #3b82f6; color: white; border-radius: 8px; font-weight: 600; padding: 12px; transition: 0.2s; }
-    .btn-primary:active { transform: scale(0.98); background: #2563eb; }
-    
-    input, select, textarea { 
-      background: #2a2a2a; border: 1px solid #444; color: white; 
-      padding: 12px; border-radius: 8px; width: 100%; outline: none; 
-      transition: 0.2s; appearance: none; 
-    }
-    input:focus, select:focus, textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
-    
-    /* NAV BOTTOM - Flexbox Perfeito e Matemático */
-    .bottom-nav { 
-      background: #1e1e1e;
-      border-top: 1px solid #333;
-      display: flex;
-      justify-content: space-between;
-      align-items: stretch;
-      padding: 8px 6px calc(10px + env(safe-area-inset-bottom)) 6px;
-      gap: 4px;
-      overflow-x: auto;
-      scrollbar-width: none;
-    }
-    .bottom-nav::-webkit-scrollbar {
-      display: none;
-    }
-
-    .nav-item { 
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 3px;
-      color: #888;
-      font-size: 11px;
-      font-weight: 600;
-      flex: 1;
-      min-width: 0;
-      padding: 6px 4px;
-      border-radius: 10px;
-      transition: 0.2s;
-    }
-
-    .nav-item i {
-      width: 20px;
-      height: 20px;
-    }
-
-    .nav-item.active {
-      color: #3b82f6;
-      background: rgba(59, 130, 246, 0.10);
-    }
-
-    /* Redução milimétrica para telas pequenas */
-    @media (max-width: 420px) {
-      .nav-item { font-size: 9px; }
-      .nav-item i { width: 18px; height: 18px; }
-    }
-
-    .alert-danger { background: rgba(239, 68, 68, 0.1); border-left: 4px solid #ef4444; padding: 12px; border-radius: 4px; }
-    .tab-content { display: none; padding-bottom: 24px; }
-    .tab-content.active { display: block; animation: fadeIn 0.3s; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-    @media (min-width: 1024px) { .bottom-nav { display: none; } }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conciliador de Estoque PRO v8.5</title>
+    <!-- Script para carregar o tema imediatamente -->
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' };
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; padding-bottom: 60px; }
+        .table-container { max-width: 100vw; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        th { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(8px); }
+        .badge { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; transition: all 0.3s; }
+        .badge-ok { background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+        .badge-sobra { background-color: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+        .badge-falta { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .dark .badge-ok { background-color: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .dark .badge-sobra { background-color: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .dark .badge-falta { background-color: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .btn-acao { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 0.375rem; transition: all 0.2s; cursor: pointer; border: 1px solid transparent; }
+        .light .btn-acao { color: #64748b; }
+        .light .btn-acao:hover { background-color: #f1f5f9; color: #0f172a; }
+        .dark .btn-acao { color: #94a3b8; }
+        .dark .btn-acao:hover { background-color: #334155; color: #f8fafc; }
+        .linha-selecionada { outline: 2px solid #6366f1; z-index: 5; position: relative; }
+        .card-kpi { cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-kpi:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+    </style>
 </head>
-<body class="antialiased h-[100dvh] w-full overflow-hidden flex flex-col pt-[30px]">
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
 
-  <!-- CABEÇALHO -->
-  <header class="shrink-0 z-40 bg-[#1e1e1e] border-b border-[#333] w-full shadow-sm">
-    <div class="max-w-7xl mx-auto flex items-center gap-4 p-4">
-      <div class="bg-blue-600 p-2 rounded-lg shrink-0"><i data-lucide="truck" class="text-white"></i></div>
-      <div class="flex-1 min-w-0">
-        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Veículo em Operação</p>
-        <select id="select-placa" onchange="App.Handlers.trocarCaminhao(this.value)" class="font-bold text-sm sm:text-lg bg-transparent border-none p-0 text-white focus:ring-0 focus:outline-none cursor-pointer truncate w-full shadow-none appearance-none"></select>
-      </div>
-      <div class="text-right shrink-0 flex items-center gap-3">
-        <div>
-          <p class="text-[10px] text-gray-400 font-bold uppercase mb-1">KM Atual</p>
-          <p id="header-km" class="font-bold text-blue-400 text-sm sm:text-base">0</p>
-        </div>
-        <button onclick="App.Auth.logout()" class="text-gray-400 hover:text-red-400 transition">
-          <i data-lucide="log-out" class="w-5 h-5"></i>
-        </button>
-      </div>
-    </div>
-  </header>
+    <input type="file" id="fileImportBackup" accept=".json" class="hidden" onchange="processarImportacaoBackup(event)">
 
-  <!-- CONTAINER GLOBAL -->
-  <div class="flex-1 w-full flex overflow-hidden max-w-7xl mx-auto">
-    
-    <!-- SIDEBAR (DESKTOP) -->
-    <aside class="hidden lg:flex flex-col w-64 shrink-0 p-6 border-r border-[#333] h-full bg-[#121212]">
-      <div class="flex flex-col h-full w-full">
-        <p class="text-xs text-gray-400 font-bold uppercase tracking-widest mb-4 shrink-0">Gestão</p>
-        <div class="flex-1 overflow-y-auto pr-2">
-          <div class="space-y-2">
-            <button id="side-nav-fretes" onclick="App.setTab('fretes')" class="side-nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-white/5 text-gray-300 font-medium transition"><div class="flex items-center gap-3"><i data-lucide="map" class="w-5 h-5"></i> Fretes</div></button>
-            <button id="side-nav-despesas" onclick="App.setTab('despesas')" class="side-nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-white/5 text-gray-300 font-medium transition"><div class="flex items-center gap-3"><i data-lucide="receipt" class="w-5 h-5"></i> Despesas</div></button>
-            <button id="side-nav-abastecimento" onclick="App.setTab('abastecimento')" class="side-nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-white/5 text-gray-300 font-medium transition"><div class="flex items-center gap-3"><i data-lucide="fuel" class="w-5 h-5"></i> Abastecimento</div></button>
-            <button id="side-nav-oleo" onclick="App.setTab('oleo')" class="side-nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-white/5 text-gray-300 font-medium transition"><div class="flex items-center gap-3"><i data-lucide="droplet" class="w-5 h-5"></i> Óleo</div></button>
-            <button id="side-nav-manutencao" onclick="App.setTab('manutencao')" class="side-nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-white/5 text-gray-300 font-medium transition"><div class="flex items-center gap-3"><i data-lucide="wrench" class="w-5 h-5"></i> Manutenção</div></button>
-            <hr class="border-[#333] my-2">
-            <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-2 px-2">Cadastros</p>
-            <button id="side-nav-motoristas" onclick="App.setTab('motoristas')" class="side-nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-white/5 text-gray-300 font-medium transition"><div class="flex items-center gap-3"><i data-lucide="users" class="w-5 h-5"></i> Motoristas</div></button>
-            <button id="side-nav-caminhoes" onclick="App.setTab('caminhoes')" class="side-nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-white/5 text-gray-300 font-medium transition"><div class="flex items-center gap-3"><i data-lucide="truck" class="w-5 h-5"></i> Frota</div></button>
-            <button id="side-nav-historico" onclick="App.setTab('historico')" class="side-nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-white/5 text-gray-300 font-medium transition"><div class="flex items-center gap-3"><i data-lucide="history" class="w-5 h-5"></i> Histórico</div></button>
-          </div>
-        </div>
-        <div class="shrink-0 mt-6 pt-6 border-t border-[#333]">
-          <button style="display:none" onclick="App.Handlers.resetDemo()" class="w-full text-left px-4 py-3 rounded-lg hover:bg-red-500/10 text-red-400 font-medium transition text-sm flex items-center gap-3"><i data-lucide="rotate-ccw" class="w-4 h-4"></i> Restaurar Demo</button>
-        </div>
-      </div>
-    </aside>
-
-    <!-- ÁREA PRINCIPAL -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-      <main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8" id="main-container">
+    <div class="w-full px-4 md:px-8 py-6 space-y-6">
         
-        <!-- FRETES -->
-        <section id="tab-fretes" class="tab-content">
-          <div class="flex justify-between items-end mb-6">
-            <div>
-              <h2 class="text-xl md:text-2xl font-bold flex items-center gap-2"><i data-lucide="map" class="text-green-500 hidden lg:block"></i> Fretes</h2>
-              <p class="text-xs text-gray-500 mt-1">Visão Global da Frota</p>
-            </div>
-            <button id="btn-novo-frete" onclick="App.Handlers.novoFrete()" class="text-xs md:text-sm bg-gray-800 px-4 py-2 rounded-lg text-green-400 font-bold hover:bg-gray-700 transition border border-green-500/30">Lançar Frete</button>
-          </div>
-          <div id="resumo-fretes" class="mb-6"></div>
-          <div class="space-y-4" id="lista-fretes"></div>
-        </section>
-
-        <!-- DESPESAS -->
-        <section id="tab-despesas" class="tab-content">
-          <div class="flex justify-between items-end mb-6">
-            <h2 class="text-xl md:text-2xl font-bold flex items-center gap-2"><i data-lucide="receipt" class="text-red-400 hidden lg:block"></i> Despesas Operacionais</h2>
-            <button onclick="App.Handlers.novaDespesa()" class="text-xs md:text-sm bg-gray-800 px-4 py-2 rounded-lg text-red-400 font-bold hover:bg-gray-700 transition border border-red-500/30">Nova Despesa</button>
-          </div>
-          <div class="space-y-4" id="lista-despesas"></div>
-        </section>
-
-        <!-- ABASTECIMENTO -->
-        <section id="tab-abastecimento" class="tab-content active">
-          <div class="flex justify-between items-end mb-6">
-            <h2 class="text-xl md:text-2xl font-bold flex items-center gap-2"><i data-lucide="fuel" class="text-blue-500 hidden lg:block"></i> Abastecimento</h2>
-          </div>
-          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <div class="xl:col-span-2 flex flex-col gap-6">
-              <div class="glass-card">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                  <!-- BLOCO 1: Operação Base -->
-                  <div><label class="block text-xs text-gray-400 font-bold mb-1">Data</label><input type="date" id="abs-data"></div>
-                  <div><label class="block text-xs text-gray-400 font-bold mb-1">KM</label><input type="number" id="abs-km" placeholder="Ex: 145500"></div>
-                  <div><label class="block text-xs text-gray-400 font-bold mb-1">Litros Diesel</label><input type="number" step="0.01" id="abs-litros" placeholder="Ex: 300.5"></div>
-                  <div id="div-abs-valor"><label class="block text-xs text-gray-400 font-bold mb-1">Valor Total Diesel (R$)</label><input type="number" step="0.01" id="abs-valor" placeholder="Ex: 1800.00"></div>
-                  
-                  <!-- BLOCO 2: Arla e Adiantamento -->
-                  <div class="col-span-1 md:col-span-2 lg:col-span-4 grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-[#333] pt-4 mt-2">
-                     <div><label class="block text-xs text-cyan-400 font-bold mb-1">Litros ARLA (Opcional)</label><input type="number" step="0.01" id="abs-arla-litros" placeholder="Qtd Arla"></div>
-                     <div id="div-abs-arla-valor"><label class="block text-xs text-cyan-400 font-bold mb-1">Valor ARLA (R$)</label><input type="number" step="0.01" id="abs-arla-valor" placeholder="Gera despesa auto"></div>
-                     <div id="div-abs-adiantamento"><label class="block text-xs text-gray-400 font-bold mb-1">Adiantamento (R$)</label><input type="number" step="0.01" id="abs-pagamento-motorista" placeholder="Auto pro extrato"></div>
-                  </div>
-
-                  <!-- BLOCO 3: Vínculos -->
-                  <div class="col-span-1 md:col-span-2 lg:col-span-4 grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-[#333] pt-4 mt-2">
-                    <div id="div-abs-motorista"><label class="block text-xs text-gray-400 font-bold mb-1">Motorista (Opcional)</label><select id="abs-motorista" class="w-full bg-[#2a2a2a] border border-[#444] rounded-lg p-3 text-white focus:border-blue-500"></select></div>
-                    <div id="div-abs-frete"><label class="block text-xs text-gray-400 font-bold mb-1">Vincular a Frete (Opcional)</label><select id="abs-frete" class="w-full bg-[#2a2a2a] border border-[#444] rounded-lg p-3 text-white focus:border-blue-500"></select></div>
-                  </div>
+        <header class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 flex flex-col md:flex-row justify-between items-center gap-4 transition-colors duration-300">
+            <div class="flex items-center gap-4">
+                <div class="bg-indigo-600 dark:bg-indigo-500 p-2.5 rounded-xl text-white shadow-lg shadow-indigo-500/30">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
                 </div>
-                <button onclick="App.Handlers.registrarAbastecimento()" class="btn-primary w-full px-8 flex justify-center items-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> Registrar Abastecimento</button>
-              </div>
-
-              <div class="glass-card">
-                <div class="flex justify-between items-end mb-2 border-b border-[#333] pb-2">
-                  <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider">Histórico Recente</h3>
-                </div>
-                <div id="lista-abastecimentos-recentes" class="space-y-3"></div>
-              </div>
-            </div>
-
-            <div class="glass-card flex flex-col justify-start">
-              <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 border-b border-[#333] pb-2">Desempenho (Último)</h3>
-              <div class="space-y-4">
-                <div><p class="text-xs text-gray-400">Média de Consumo</p><p class="text-3xl font-black text-green-400 mt-1" id="display-media">-- <span class="text-sm font-normal text-gray-500">km/l</span></p></div>
-                <div id="div-abs-custo-km"><p class="text-xs text-gray-400">Custo por KM</p><p class="text-xl font-bold text-white mt-1" id="display-custokm">R$ --</p></div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- ÓLEO -->
-        <section id="tab-oleo" class="tab-content">
-          <div class="flex justify-between items-end mb-6">
-            <h2 class="text-xl md:text-2xl font-bold flex items-center gap-2"><i data-lucide="droplet" class="text-yellow-500 hidden lg:block"></i> Gestão de Óleo</h2>
-          </div>
-          <div id="oleo-content"></div>
-        </section>
-
-        <!-- MANUTENÇÃO -->
-        <section id="tab-manutencao" class="tab-content">
-          <div class="flex justify-between items-end mb-6">
-            <h2 class="text-xl md:text-2xl font-bold flex items-center gap-2"><i data-lucide="wrench" class="text-yellow-500 hidden lg:block"></i> Manutenção</h2>
-            <button onclick="App.Handlers.registrarManutencao()" class="text-xs md:text-sm bg-gray-800 px-4 py-2 rounded-lg text-yellow-500 font-bold hover:bg-gray-700 transition border border-yellow-500/30">Nova Manutenção</button>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="lista-manutencao"></div>
-        </section>
-
-        <!-- MOTORISTAS -->
-        <section id="tab-motoristas" class="tab-content">
-          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 mb-6">
-            <h2 class="text-xl md:text-2xl font-bold flex items-center gap-2"><i data-lucide="users" class="text-cyan-400 hidden lg:block"></i> Contas Correntes Motoristas</h2>
-            <div class="flex flex-wrap gap-2">
-              <button onclick="App.Handlers.novoMotorista()" class="text-xs md:text-sm bg-gray-800 px-4 py-2 rounded-lg text-cyan-400 font-bold hover:bg-gray-700 transition">Novo Motorista</button>
-              <button onclick="App.Handlers.novoLancamentoMotorista()" class="text-xs md:text-sm bg-gray-800 px-4 py-2 rounded-lg text-green-400 font-bold hover:bg-gray-700 transition">Novo Lançamento</button>
-            </div>
-          </div>
-          <div class="space-y-6" id="lista-motoristas"></div>
-        </section>
-
-        <!-- CAMINHÕES -->
-        <section id="tab-caminhoes" class="tab-content">
-          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 mb-6">
-            <h2 class="text-xl md:text-2xl font-bold flex items-center gap-2"><i data-lucide="truck" class="text-blue-400 hidden lg:block"></i> Gestão da Frota</h2>
-            <button onclick="App.Handlers.novoCaminhao()" class="text-xs md:text-sm bg-gray-800 px-4 py-2 rounded-lg text-blue-400 font-bold hover:bg-gray-700 transition">Cadastrar Caminhão</button>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" id="lista-caminhoes"></div>
-        </section>
-
-        <!-- HISTÓRICO GERAL -->
-        <section id="tab-historico" class="tab-content">
-          <h2 class="text-xl font-bold mb-6 flex items-center gap-2"><i data-lucide="history" class="text-purple-500"></i> Histórico Geral (Timeline)</h2>
-          <div class="space-y-4" id="lista-historico"></div>
-        </section>
-
-      </main>
-
-      <!-- NAVBAR MOBILE -->
-      <nav class="bottom-nav lg:hidden">
-        <button onclick="App.setTab('fretes')" id="nav-fretes" class="nav-item"><i data-lucide="map"></i><span>Fretes</span></button>
-        <button onclick="App.setTab('despesas')" id="nav-despesas" class="nav-item"><i data-lucide="receipt"></i><span>Despesas</span></button>
-        <button onclick="App.setTab('abastecimento')" id="nav-abastecimento" class="nav-item active"><i data-lucide="fuel"></i><span>Abast.</span></button>
-        <button onclick="App.setTab('oleo')" id="nav-oleo" class="nav-item"><i data-lucide="droplet"></i><span>Óleo</span></button>
-        <button onclick="App.setTab('manutencao')" id="nav-manutencao" class="nav-item"><div class="relative"><i data-lucide="wrench"></i><span id="badge-manutencao" class="absolute -top-1 -right-2 w-3 h-3 bg-red-500 rounded-full hidden"></span></div><span>Manut.</span></button>
-        <button onclick="App.setTab('motoristas')" id="nav-motoristas" class="nav-item"><i data-lucide="users"></i><span>Motor.</span></button>
-        <button onclick="App.setTab('caminhoes')" id="nav-caminhoes" class="nav-item"><i data-lucide="truck"></i><span>Frota</span></button>
-        <button onclick="App.setTab('historico')" id="nav-historico" class="nav-item"><i data-lucide="history"></i><span>Hist.</span></button>
-      </nav>
-    </div>
-  </div>
-
-  <!-- MODAIS DO SISTEMA -->
-  
-  <div id="login-screen" class="fixed inset-0 z-[200] bg-[#121212] flex items-center justify-center p-4">
-    <div class="w-full max-w-md glass-card">
-      <div class="text-center mb-6">
-        <div class="bg-blue-600 p-3 rounded-xl inline-flex mb-4">
-          <i data-lucide="truck" class="text-white w-6 h-6"></i>
-        </div>
-        <h2 class="text-2xl font-black text-white">Entrar no Sistema</h2>
-        <p class="text-sm text-gray-400 mt-2">Acesse com seu email e senha</p>
-      </div>
-  
-      <div class="space-y-4">
-        <div>
-          <label class="block text-xs text-gray-400 font-bold mb-1">Email</label>
-          <input type="email" id="login-email" placeholder="seuemail@empresa.com">
-        </div>
-  
-        <div>
-          <label class="block text-xs text-gray-400 font-bold mb-1">Senha</label>
-          <input type="password" id="login-password" placeholder="********">
-        </div>
-  
-        <button onclick="App.Auth.handleLogin()" class="btn-primary w-full">
-          Entrar
-        </button>
-      </div>
-  
-      <p id="login-error" class="text-red-400 text-sm mt-4 hidden"></p>
-    </div>
-  </div>
-
-  <div id="msg-modal" class="fixed inset-0 bg-black/80 z-[100] hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-[#1e1e1e] border border-[#333] p-6 rounded-xl w-full max-w-sm text-center shadow-2xl">
-      <div id="msg-icon" class="mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-4"></div>
-      <h3 id="msg-title" class="text-lg font-bold text-white mb-2">Mensagem</h3>
-      <p id="msg-text" class="text-gray-400 text-sm mb-6">Texto</p>
-      <button onclick="document.getElementById('msg-modal').classList.add('hidden')" class="btn-primary w-full">OK</button>
-    </div>
-  </div>
-
-  <div id="confirm-modal" class="fixed inset-0 bg-black/80 z-[100] hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-[#1e1e1e] border border-[#333] p-6 rounded-xl w-full max-w-sm text-center shadow-2xl">
-      <div id="confirm-icon" class="mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-4"></div>
-      <h3 id="confirm-title" class="text-lg font-bold text-white mb-2">Confirmação</h3>
-      <p id="confirm-text" class="text-gray-400 text-sm mb-6">Você tem certeza?</p>
-      <div class="flex gap-3">
-        <button id="confirm-btn-cancel" class="flex-1 bg-gray-800 text-gray-300 rounded-lg font-bold py-3 hover:bg-gray-700 transition">Não</button>
-        <button id="confirm-btn-ok" class="flex-1 bg-blue-600 text-white rounded-lg font-bold py-3 hover:bg-blue-700 transition">Sim</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="form-modal" class="fixed inset-0 bg-black/80 z-[100] hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-[#1e1e1e] border border-[#333] p-6 rounded-xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
-      <h3 id="form-title" class="text-xl font-bold text-white mb-4 shrink-0">Formulário</h3>
-      <div id="form-body" class="space-y-4 overflow-y-auto pr-2 flex-1"></div>
-      <div class="flex gap-3 mt-6 shrink-0 pt-4 border-t border-[#333]">
-        <button id="form-btn-cancel" class="flex-1 bg-gray-800 text-gray-300 rounded-lg font-bold py-3 hover:bg-gray-700 transition">Cancelar</button>
-        <button id="form-btn-submit" class="flex-1 bg-blue-600 text-white rounded-lg font-bold py-3 hover:bg-blue-700 transition">Salvar</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // V15: Flexbox Premium UI + Correções
-    const STORAGE_KEY = 'frota_torre_db_proto_v15'; 
-
-    const AppState = {
-      user: null,
-      empresaId: null,
-      perfil: null,
-      nome: null,
-      motoristaId: null,
-      veiculos: []
-    };
-
-    const Utils = {
-      parseNumber: (v) => {
-        if (v === null || v === undefined || v === '') return NaN;
-        if (typeof v === 'number') return v;
-
-        let value = String(v).trim();
-
-        // remove espaços e símbolo de moeda
-        value = value.replace(/\s/g, '').replace(/R\$/gi, '');
-
-        // se tiver vírgula, assume formato BR
-        if (value.includes(',')) {
-          value = value.replace(/\./g, '').replace(',', '.');
-        }
-
-        const parsed = Number(value);
-        return Number.isFinite(parsed) ? parsed : NaN;
-      },
-
-      parseMoney: (v) => {
-        const n = Utils.parseNumber(v);
-        return Number.isFinite(n) ? n : 0;
-      },
-
-      formatMoney: (v) =>
-        Number(v || 0).toLocaleString('pt-BR', {
-          style: 'currency',
-          currency: 'BRL'
-        }),
-
-      formatNumberBR: (v, decimals = 2) =>
-        Number(v || 0).toLocaleString('pt-BR', {
-          minimumFractionDigits: decimals,
-          maximumFractionDigits: decimals
-        }),
-
-      formatDate: (d) => {
-        const dt = new Date(d);
-        return `${dt.toLocaleDateString('pt-BR')} às ${dt.toLocaleTimeString('pt-BR', {
-          hour: '2-digit',
-          minute: '2-digit'
-        })}`;
-      },
-
-      todayISO: () => new Date().toISOString().split('T')[0],
-
-      escapeHtml: (value) => {
-        return String(value ?? '')
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#39;');
-      }
-    };
-
-    const CONSTANTS = {
-      CATEGORIAS_DESPESA: ['Abastecimento Extra', 'ARLA', 'Borracheiro', 'Eletricista', 'Peças', 'Mão de Obra', 'Manutenção', 'Pedágio', 'Outros'],
-      TIPOS_LANCAMENTO: ['salario', 'diaria', 'comissao', 'adiantamento', 'desconto', 'pagamento']
-    };
-
-    const Validators = {
-      frete: (dados) => {
-        const valorFrete = Utils.parseMoney(dados.valorFrete);
-        const valorRecebido = Utils.parseMoney(dados.valorRecebido);
-        const valorAReceber = Utils.parseMoney(dados.valorAReceber);
-        const valorMotorista = Utils.parseMoney(dados.valorMotorista);
-
-        if (!dados.cliente || !dados.cliente.trim()) return { ok: false, msg: 'Cliente obrigatório.' };
-        if (!dados.caminhao || !dados.motorista) return { ok: false, msg: 'Caminhão e Motorista obrigatórios.' };
-        if (valorFrete <= 0) return { ok: false, msg: 'Valor do frete deve ser maior que zero.' };
-        if (valorRecebido < 0 || valorAReceber < 0 || valorMotorista < 0) return { ok: false, msg: 'Valores não podem ser negativos.' };
-        if (Math.round((valorRecebido + valorAReceber) * 100) > Math.round(valorFrete * 100)) {
-          return { ok: false, msg: 'Recebido + A Receber ultrapassa o Frete Total.' };
-        }
-        return { ok: true };
-      },
-      despesa: (dados) => {
-        const valor = Utils.parseMoney(dados.valor);
-        if (!dados.descricao || !dados.descricao.trim()) return { ok: false, msg: 'Descrição obrigatória.' };
-        if (!dados.categoria) return { ok: false, msg: 'Categoria obrigatória.' };
-        if (!dados.caminhao) return { ok: false, msg: 'Caminhão obrigatório.' };
-        if (valor <= 0) return { ok: false, msg: 'Valor da despesa deve ser maior que zero.' };
-        return { ok: true };
-      },
-      lancamentoMot: (dados) => {
-        const valor = Utils.parseMoney(dados.valor);
-        if (!dados.motoristaId) return { ok: false, msg: 'Selecione um motorista.' };
-        if (!dados.tipo) return { ok: false, msg: 'Tipo do lançamento obrigatório.' };
-        if (valor <= 0) return { ok: false, msg: 'Valor deve ser maior que zero.' };
-        return { ok: true };
-      },
-      abastecimento: (dados, truckAtual) => {
-        const kmBomba = Utils.parseMoney(dados.kmBomba);
-        const litros = Utils.parseMoney(dados.litros);
-
-        if (!dados.data) return { ok: false, msg: 'Data obrigatória.' };
-        if (kmBomba <= Number(truckAtual.kmAtual || 0)) {
-          return { ok: false, msg: `KM deve ser maior que o atual (${truckAtual.kmAtual}).` };
-        }
-        if (litros <= 0) return { ok: false, msg: 'Litros devem ser maiores que zero.' };
-        return { ok: true };
-      },
-      caminhao: (dados, id_atual) => {
-        if (!dados.placa || !dados.placa.trim()) return { ok: false, msg: 'Placa obrigatória.' };
-        const p = dados.placa.toUpperCase().trim();
-        if (!id_atual && DB.caminhoes[p]) return { ok: false, msg: 'Esta placa já está cadastrada.' };
-        if (dados.kmAtual < 0) return { ok: false, msg: 'KM não pode ser negativo.' };
-        return { ok: true, placa: p };
-      }
-    };
-
-    const INITIAL_DB = {
-      caminhaoAtual: '',
-      fretes: [], despesas: [], motoristas: [], financeiroMotoristas: [], caminhoes: {}, manutencoes: []
-    };
-
-    let DB = {};
-
-    const Storage = {
-      load: () => { DB = JSON.parse(JSON.stringify(INITIAL_DB)); }, // localStorage morto, estado local domina
-      save: () => { /* Vazio, salvamento agora é na nuvem */ }
-    };
-
-    const Selectors = {
-      getTruckAtual: () => DB.caminhaoAtual ? DB.caminhoes[DB.caminhaoAtual] : null,
-      getCaminhaoPlaca: (id) => { const c = Object.values(DB.caminhoes).find(x => x.id === id); return c ? c.placa : 'Desconhecido'; },
-      getMotoristaNome: (id) => { const m = DB.motoristas.find(x => x.id === id); return m ? m.nome : 'Sem Motorista'; },
-      getLancamentosMotorista: (id) => DB.financeiroMotoristas.filter(l => l.motoristaId === id).sort((a,b) => new Date(b.data) - new Date(a.data)),
-      getResumoMotorista: (motoristaId) => {
-        const lancamentos = Selectors.getLancamentosMotorista(motoristaId);
-        let totalDevido = 0, totalPago = 0;
-        lancamentos.forEach(l => {
-          if (l.status !== 'confirmado') return;
-          if (['salario', 'diaria', 'comissao'].includes(l.tipo)) totalDevido += Number(l.valor || 0);
-          if (['pagamento', 'adiantamento', 'desconto'].includes(l.tipo)) totalPago += Number(l.valor || 0);
-        });
-        return { totalDevido, totalPago, saldoPendente: totalDevido - totalPago };
-      }
-    };
-
-    async function carregarVeiculosMotorista(motoristaId) {
-      const { data, error } = await supabaseClient
-        .from('motoristas_veiculos')
-        .select(`
-          id,
-          tipo_vinculo,
-          caminhoes (
-            id,
-            placa,
-            modelo,
-            km_atual,
-            km_ultima_troca_oleo,
-            intervalo_oleo_km,
-            status,
-            observacao
-          )
-        `)
-        .eq('motorista_id', motoristaId);
-
-      if (error) {
-        console.error('Erro ao carregar veículos do motorista:', error);
-        return [];
-      }
-
-      return data || [];
-    }
-
-    async function carregarMotoristaLogado() {
-      const { data: motorista, error } = await supabaseClient
-        .from('motoristas')
-        .select('*')
-        .eq('user_id', AppState.user.id)
-        .eq('empresa_id', AppState.empresaId)
-        .single();
-
-      if (error) {
-        console.error('Erro ao carregar motorista logado:', error);
-        return null;
-      }
-
-      AppState.motoristaId = motorista.id;
-
-      const veiculos = await carregarVeiculosMotorista(motorista.id);
-      AppState.veiculos = veiculos || [];
-
-      DB.caminhoes = {};
-
-      veiculos.forEach(v => {
-        if (!v.caminhoes) return;
-
-        DB.caminhoes[v.caminhoes.placa] = {
-          id: v.caminhoes.id,
-          placa: v.caminhoes.placa,
-          modelo: v.caminhoes.modelo,
-          kmAtual: v.caminhoes.km_atual || 0,
-          kmUltimaTrocaOleo: v.caminhoes.km_ultima_troca_oleo || null,
-          intervaloOleoKm: v.caminhoes.intervalo_oleo_km || null,
-          status: v.caminhoes.status || 'Ativo',
-          observacao: v.caminhoes.observacao || '',
-          tipoVinculo: v.tipo_vinculo,
-          abastecimentos: [],
-          eventosManutencao: []
-        };
-      });
-
-      const principal = Object.values(DB.caminhoes).find(v => v.tipoVinculo === 'principal');
-      const primeiro = Object.values(DB.caminhoes)[0];
-
-      DB.caminhaoAtual = principal ? principal.placa : (primeiro ? primeiro.placa : null);
-
-      return motorista;
-    }
-
-    async function carregarCaminhoes() {
-      let query = supabaseClient
-        .from('caminhoes')
-        .select('*')
-        .eq('empresa_id', AppState.empresaId);
-
-      if (AppState.perfil === 'motorista') {
-        const ids = AppState.veiculos.map(v => v.caminhoes?.id).filter(Boolean);
-        if (ids.length > 0) {
-          query = query.in('id', ids);
-        } else {
-          query = query.eq('id', '00000000-0000-0000-0000-000000000000'); // Força vazio se não tiver vínculo
-        }
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Erro ao carregar caminhões:', error);
-        return;
-      }
-
-      DB.caminhoes = {};
-
-      data.forEach(c => {
-        DB.caminhoes[c.placa] = {
-          id: c.id,
-          placa: c.placa,
-          modelo: c.modelo,
-          kmAtual: c.km_atual || 0,
-          kmUltimaTrocaOleo: c.km_ultima_troca_oleo || null,
-          intervaloOleoKm: c.intervalo_oleo_km || null,
-          status: c.status || 'Ativo',
-          observacao: c.observacao || '',
-          abastecimentos: [],
-          eventosManutencao: []
-        };
-      });
-
-      const placas = Object.keys(DB.caminhoes);
-
-      if (placas.length > 0) {
-        DB.caminhaoAtual = placas[0];
-      } else {
-        DB.caminhaoAtual = null;
-      }
-
-      UI.sync();
-    }
-
-    async function carregarMotoristas() {
-      let query = supabaseClient
-        .from('motoristas')
-        .select('*')
-        .eq('empresa_id', AppState.empresaId);
-
-      if (AppState.perfil === 'motorista' && AppState.motoristaId) {
-        query = query.eq('id', AppState.motoristaId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Erro ao carregar motoristas:', error);
-        return;
-      }
-
-      const motoristas = [];
-      for (const m of (data || [])) {
-        const { data: vinculo } = await supabaseClient
-          .from('motoristas_veiculos')
-          .select('caminhao_id')
-          .eq('motorista_id', m.id)
-          .eq('tipo_vinculo', 'principal')
-          .maybeSingle();
-
-        motoristas.push({
-          id: m.id,
-          nome: m.nome,
-          telefone: m.telefone,
-          documento: m.documento || '',
-          pix: m.pix,
-          tipoPagamento: m.tipo_pagamento,
-          valorPadrao: m.valor_padrao,
-          status: m.status,
-          user_id: m.user_id || '',
-          caminhao_id: vinculo?.caminhao_id || null
-        });
-      }
-
-      DB.motoristas = motoristas;
-      UI.sync();
-    }
-
-    async function carregarFretes() {
-      let query = supabaseClient
-        .from('fretes')
-        .select('*')
-        .eq('empresa_id', AppState.empresaId);
-
-      if (AppState.perfil === 'motorista') {
-        const ids = AppState.veiculos.map(v => v.caminhoes?.id).filter(Boolean);
-        if (ids.length > 0) {
-          query = query.in('caminhao_id', ids);
-        } else {
-          query = query.eq('caminhao_id', '00000000-0000-0000-0000-000000000000');
-        }
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Erro ao carregar fretes:', error);
-        return;
-      }
-
-      DB.fretes = (data || []).map(f => ({
-        id: f.id,
-        data: f.data_lancamento || f.created_at || new Date().toISOString(),
-        cliente: f.cliente,
-        caminhao: f.caminhao_id,
-        motorista: f.motorista_id,
-        valorFrete: f.valor_frete,
-        valorRecebido: f.valor_recebido,
-        valorAReceber: f.valor_a_receber,
-        valorMotorista: f.valor_motorista,
-        status: f.status,
-        observacao: f.observacao,
-        dataPrevistaRecebimento: f.data_prevista_recebimento
-      }));
-
-      UI.sync();
-    }
-
-    async function carregarManutencoes() {
-      let query = supabaseClient
-        .from('manutencoes')
-        .select('*')
-        .eq('empresa_id', AppState.empresaId);
-
-      if (AppState.perfil === 'motorista' && AppState.motoristaId) {
-        query = query.eq('motorista_id', AppState.motoristaId);
-      }
-
-      const { data, error } = await query.order('data', { ascending: false });
-
-      if (error) {
-        console.error('Erro ao carregar manutenções:', error);
-        return;
-      }
-
-      DB.manutencoes = data || [];
-      UI.sync();
-    }
-
-    async function carregarDespesas() {
-      let query = supabaseClient
-        .from('despesas')
-        .select('*')
-        .eq('empresa_id', AppState.empresaId)
-        .order('data', { ascending: false });
-
-      if (AppState.perfil === 'motorista' && AppState.motoristaId) {
-         query = query.eq('motorista_id', AppState.motoristaId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Erro ao carregar despesas:', error);
-        return;
-      }
-
-      DB.despesas = data || [];
-      UI.sync();
-    }
-
-    async function carregarAbastecimentos() {
-      let query = supabaseClient
-        .from('abastecimentos')
-        .select('*')
-        .eq('empresa_id', AppState.empresaId)
-        .order('data', { ascending: true })
-        .order('created_at', { ascending: true });
-
-      if (AppState.perfil === 'motorista' && AppState.motoristaId) {
-        query = query.eq('motorista_id', AppState.motoristaId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Erro ao carregar abastecimentos:', error);
-        return;
-      }
-
-      Object.values(DB.caminhoes).forEach(c => {
-        c.abastecimentos = [];
-      });
-
-      const ultimoKmPorCaminhao = {};
-
-      (data || []).forEach(a => {
-        const caminhao = Object.values(DB.caminhoes).find(c => c.id === a.caminhao_id);
-        if (!caminhao) return;
-
-        const kmAtualRegistro = Number(a.km_bomba || 0);
-        const kmAnterior = Number(ultimoKmPorCaminhao[a.caminhao_id] || 0);
-        const kmRodados = kmAnterior > 0 ? Math.max(kmAtualRegistro - kmAnterior, 0) : 0;
-        const litros = Number(a.litros_diesel || 0);
-        const valor = Number(a.valor_diesel || 0);
-
-        caminhao.abastecimentos.push({
-          id: a.id,
-          data: a.data,
-          kmAnterior,
-          kmAtual: kmAtualRegistro,
-          kmRodados,
-          litros,
-          valor,
-          media: kmRodados > 0 && litros > 0 ? kmRodados / litros : 0,
-          custoKm: kmRodados > 0 ? valor / kmRodados : 0,
-          litrosArla: Number(a.litros_arla || 0),
-          valorArla: Number(a.valor_arla || 0),
-          motoristaId: a.motorista_id || null,
-          freteId: a.frete_id || null
-        });
-
-        ultimoKmPorCaminhao[a.caminhao_id] = kmAtualRegistro;
-      });
-
-      UI.sync();
-    }
-
-    async function carregarFinanceiroMotoristas() {
-      let query = supabaseClient
-        .from('financeiro_motoristas')
-        .select('*')
-        .eq('empresa_id', AppState.empresaId)
-        .order('data', { ascending: false })
-        .order('created_at', { ascending: false });
-
-      if (AppState.perfil === 'motorista' && AppState.motoristaId) {
-        query = query.eq('motorista_id', AppState.motoristaId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Erro ao carregar financeiro dos motoristas:', error);
-        return;
-      }
-
-      DB.financeiroMotoristas = (data || []).map(l => ({
-        id: l.id,
-        motoristaId: l.motorista_id,
-        freteId: l.frete_id,
-        abastecimentoId: l.abastecimento_id,
-        tipo: l.tipo,
-        valor: Number(l.valor || 0),
-        descricao: l.descricao || '',
-        origem: l.origem || 'manual',
-        status: l.status || 'confirmado',
-        data: l.data
-      }));
-
-      UI.sync();
-    }
-
-    const Actions = {
-      trocarCaminhao: (placa) => { DB.caminhaoAtual = placa; UI.sync(); },
-      
-      salvarFrete: async (dados, id = null) => {
-        const val = Validators.frete(dados); if (!val.ok) throw new Error(val.msg);
-        let status = 'recebido';
-        if (dados.valorAReceber > 0 && dados.valorRecebido > 0) status = 'parcial';
-        else if (dados.valorAReceber > 0 && dados.valorRecebido === 0) status = 'pendente';
-
-        const payload = {
-          cliente: dados.cliente,
-          caminhao_id: dados.caminhao,
-          motorista_id: dados.motorista,
-          valor_frete: dados.valorFrete,
-          valor_recebido: dados.valorRecebido,
-          valor_a_receber: dados.valorAReceber,
-          valor_motorista: dados.valorMotorista,
-          status: status,
-          observacao: dados.observacao,
-          data_prevista_recebimento: dados.dataPrevistaRecebimento || null,
-          empresa_id: AppState.empresaId
-        };
-
-        if (id) {
-          const { error } = await supabaseClient.from('fretes').update(payload).eq('id', id).eq('empresa_id', AppState.empresaId);
-          if (error) throw new Error('Erro ao atualizar frete: ' + error.message);
-        } else {
-          const { error } = await supabaseClient.from('fretes').insert([payload]);
-          if (error) throw new Error('Erro ao salvar frete: ' + error.message);
-        }
-        await carregarFretes();
-      },
-      excluirFrete: async (id) => {         
-        const { error } = await supabaseClient.from('fretes').delete().eq('id', id).eq('empresa_id', AppState.empresaId);
-        if (error) throw new Error('Erro ao excluir no banco: ' + error.message);
-        DB.fretes = DB.fretes.filter(f => f.id !== id); UI.sync(); 
-      },
-
-      salvarDespesa: async (payload, id = null) => {
-        if (id) { 
-          const { error } = await supabaseClient
-            .from('despesas')
-            .update(payload)
-            .eq('id', id)
-            .eq('empresa_id', AppState.empresaId);
-          if (error) throw error;
-        } else { 
-          const { error } = await supabaseClient
-            .from('despesas')
-            .insert([payload]);
-          if (error) throw error;
-        }
-        await carregarDespesas();
-      },
-      excluirDespesa: async (id) => { 
-        const { error } = await supabaseClient
-          .from('despesas')
-          .delete()
-          .eq('id', id)
-          .eq('empresa_id', AppState.empresaId);
-        if (error) throw error;
-        await carregarDespesas();
-      },
-
-      salvarLancamentoMot: async (dados, id = null) => {
-        const payload = {
-          empresa_id: AppState.empresaId,
-          motorista_id: dados.motoristaId,
-          frete_id: dados.freteId || null,
-          abastecimento_id: dados.abastecimentoId || null,
-          tipo: dados.tipo,
-          valor: Utils.parseMoney(dados.valor),
-          descricao: dados.descricao || '',
-          origem: dados.origem || 'manual',
-          status: dados.status || 'confirmado',
-          data: dados.data ? String(dados.data).split('T')[0] : Utils.todayISO()
-        };
-
-        if (id) {
-          await supabaseClient
-            .from('financeiro_motoristas')
-            .update(payload)
-            .eq('id', id)
-            .eq('empresa_id', AppState.empresaId);
-        } else {
-          await supabaseClient
-            .from('financeiro_motoristas')
-            .insert([payload]);
-        }
-
-        await carregarFinanceiroMotoristas();
-      },
-      excluirLancamentoMot: async (id) => {
-        await supabaseClient
-          .from('financeiro_motoristas')
-          .delete()
-          .eq('id', id)
-          .eq('empresa_id', AppState.empresaId);
-
-        await carregarFinanceiroMotoristas();
-      },
-      
-      registrarAbastecimento: async (dados) => {
-        const truck = Selectors.getTruckAtual();
-        if (!truck) throw new Error('Nenhum caminhão selecionado.');
-
-        const val = Validators.abastecimento(dados, truck);
-        if (!val.ok) throw new Error(val.msg);
-
-        const motoristaIdToSave = AppState.perfil === 'motorista'
-          ? AppState.motoristaId
-          : (dados.motoristaId || null);
-
-        const payload = {
-          data: dados.data ? String(dados.data).split('T')[0] : Utils.todayISO(),
-          empresa_id: AppState.empresaId,
-          motorista_id: motoristaIdToSave,
-          caminhao_id: truck.id,
-          frete_id: dados.freteId || null,
-          km_bomba: dados.kmBomba,
-          litros_diesel: dados.litros,
-          valor_diesel: dados.valor || 0,
-          litros_arla: dados.arlaLitros || 0,
-          valor_arla: dados.arlaValor || 0,
-          observacao: null
-        };
-
-        const { error } = await supabaseClient.from('abastecimentos').insert([payload]);
-        if (error) throw new Error('Erro ao salvar abastecimento: ' + error.message);
-
-        const { error: errKm } = await supabaseClient
-          .from('caminhoes')
-          .update({ km_atual: dados.kmBomba })
-          .eq('id', truck.id)
-          .eq('empresa_id', AppState.empresaId);
-
-        if (errKm) throw new Error('Erro ao atualizar KM do caminhão: ' + errKm.message);
-
-        await carregarCaminhoes();
-        await carregarAbastecimentos();
-      },
-      excluirAbastecimento: async (placa, id) => {
-        const { error } = await supabaseClient
-          .from('abastecimentos')
-          .delete()
-          .eq('id', id)
-          .eq('empresa_id', AppState.empresaId);
-
-        if (error) throw new Error('Erro ao excluir abastecimento: ' + error.message);
-
-        await carregarAbastecimentos();
-      },
-
-      excluirMotorista: async (id) => {
-        const tF = DB.fretes.some(x => x.motorista === id);
-        const tD = DB.despesas.some(x => x.motoristaId === id);
-        const tFin = DB.financeiroMotoristas.some(x => x.motoristaId === id);
-        const tAbs = Object.values(DB.caminhoes).some(c => c.abastecimentos.some(a => a.motoristaId === id));
-        if (tF || tD || tFin || tAbs) throw new Error('Motorista possui fretes, despesas ou extratos vinculados e não pode ser excluído.');
-        
-        // Exclui do banco
-        const { error } = await supabaseClient.from('motoristas').delete().eq('id', id).eq('empresa_id', AppState.empresaId);
-        if (error) throw new Error('Erro ao excluir no banco: ' + error.message);
-
-        // Exclui do cache
-        DB.motoristas = DB.motoristas.filter(m => m.id !== id);
-        Storage.save(); UI.sync();
-      },
-
-      salvarCaminhao: async (dados, id_atual = null) => {
-        const val = Validators.caminhao(dados, id_atual); if(!val.ok) throw new Error(val.msg);
-        const p = val.placa;
-
-        if (!id_atual) {
-          const { error } = await supabaseClient.from('caminhoes').insert([{
-            placa: p,
-            modelo: dados.modelo,
-            km_atual: parseInt(dados.kmAtual),
-            km_ultima_troca_oleo: dados.kmUltimaTrocaOleo ? parseInt(dados.kmUltimaTrocaOleo) : null,
-            intervalo_oleo_km: dados.intervaloOleoKm ? parseInt(dados.intervaloOleoKm) : null,
-            status: dados.status || 'Ativo',
-            observacao: dados.observacao || '',
-            empresa_id: AppState.empresaId
-          }]);
-          if (error) throw new Error('Erro ao salvar no banco: ' + error.message);
-          DB.caminhaoAtual = p;
-        } else {
-          const caminhaoAtual = Object.values(DB.caminhoes).find(c => c.placa === id_atual);
-          if (!caminhaoAtual?.id) throw new Error('Caminhão não encontrado.');
-
-          if (p !== id_atual) {
-            const placaJaExiste = Object.keys(DB.caminhoes).includes(p);
-            if (placaJaExiste) throw new Error('Esta placa já está cadastrada.');
-          }
-
-          const { error } = await supabaseClient
-            .from('caminhoes')
-            .update({
-              placa: p,
-              modelo: dados.modelo,
-              km_atual: parseInt(dados.kmAtual),
-              km_ultima_troca_oleo: dados.kmUltimaTrocaOleo ? parseInt(dados.kmUltimaTrocaOleo) : null,
-              intervalo_oleo_km: dados.intervaloOleoKm ? parseInt(dados.intervaloOleoKm) : null,
-              status: dados.status || 'Ativo',
-              observacao: dados.observacao || ''
-            })
-            .eq('id', caminhaoAtual.id)
-            .eq('empresa_id', AppState.empresaId);
-          if (error) throw new Error('Erro ao atualizar no banco: ' + error.message);
-        }
-        await carregarCaminhoes();
-      },
-      excluirCaminhao: async (placa) => {
-        if (Object.keys(DB.caminhoes).length <= 1) throw new Error('Você precisa ter pelo menos 1 caminhão no sistema.');
-        if (DB.caminhaoAtual === placa) throw new Error("Mude de caminhão no topo da tela antes de excluir este.");
-        const { error } = await supabaseClient.from('caminhoes').delete().eq('placa', placa).eq('empresa_id', AppState.empresaId);
-        if (error) throw new Error('Erro ao excluir no banco: ' + error.message);
-        delete DB.caminhoes[placa]; UI.sync();
-      },
-
-      excluirManutencao: async (id) => {
-        const { error } = await supabaseClient
-          .from('manutencoes')
-          .delete()
-          .eq('id', id)
-          .eq('empresa_id', AppState.empresaId);
-
-        if (error) throw new Error('Erro ao excluir manutenção: ' + error.message);
-
-        await carregarManutencoes();
-      },
-
-      atualizarKmManual: (km) => { 
-        const truck = Selectors.getTruckAtual();
-        if(isNaN(km) || km < 0) throw new Error('KM inválido.');
-        truck.kmAtual = km; UI.sync(); 
-      }
-    };
-
-    const UI = {
-      sync: () => { 
-        UI.populateSelects(); UI.renderHeader(); 
-        UI.renderCaminhoes(); UI.renderFretes(); UI.renderDespesas(); UI.renderAbastecimento(); 
-        UI.renderManutencao(); UI.renderMotoristas(); UI.renderHistorico(); UI.renderOleo();
-        
-        const absData = document.getElementById('abs-data');
-        if (absData && !absData.value) absData.value = Utils.todayISO();
-
-        lucide.createIcons(); 
-      },
-
-      renderHeader: () => {
-        const truck = Selectors.getTruckAtual();
-        const selectPlaca = document.getElementById('select-placa');
-
-        if (AppState.perfil === 'motorista') {
-          const cavalo = Object.values(DB.caminhoes).find(v => v.tipoVinculo === 'principal');
-          const carreta = Object.values(DB.caminhoes).find(v => v.tipoVinculo === 'carreta');
-
-          const label = carreta
-            ? `🚛 ${cavalo?.placa || 'Sem cavalo'} (Cavalo) + ${carreta?.placa || 'Sem carreta'} (Carreta)`
-            : `🚛 ${cavalo?.placa || 'Nenhum veículo'} (Cavalo)`;
-
-          if (selectPlaca) {
-            const value = cavalo?.placa || '';
-            selectPlaca.innerHTML = `<option value="${value}">${label}</option>`;
-            selectPlaca.disabled = true;
-          }
-        }
-
-        document.getElementById('header-km').innerText = truck
-          ? Number(truck.kmAtual || 0).toLocaleString('pt-BR')
-          : '0';
-      },
-      
-      populateSelects: () => {
-        const p = document.getElementById('select-placa'); 
-        if (p && AppState.perfil !== 'motorista') {
-             const placas = Object.keys(DB.caminhoes);
-             p.disabled = false;
-             p.innerHTML = placas.map(c => `<option value="${c}">${c}</option>`).join('');
-             if (DB.caminhaoAtual && placas.includes(DB.caminhaoAtual)) {
-               p.value = DB.caminhaoAtual;
-             } else if (placas.length > 0) {
-               DB.caminhaoAtual = placas[0];
-               p.value = placas[0];
-             }
-        }
-        
-        const absMot = document.getElementById('abs-motorista'); 
-        if (absMot) { const v = absMot.value; absMot.innerHTML = `<option value="">-- Nenhum --</option>` + DB.motoristas.map(m => `<option value="${m.id}">${m.nome}</option>`).join(''); if([...absMot.options].some(o => o.value === v)) absMot.value = v; }
-        
-        const absFrete = document.getElementById('abs-frete');
-        if (absFrete) { const v = absFrete.value; absFrete.innerHTML = `<option value="">-- Nenhum --</option>` + DB.fretes.map(f => `<option value="${f.id}">${f.cliente} (${Selectors.getCaminhaoPlaca(f.caminhao)})</option>`).join(''); if([...absFrete.options].some(o => o.value === v)) absFrete.value = v; }
-      },
-
-      renderCaminhoes: () => {
-        const e = Utils.escapeHtml;
-        const l = document.getElementById('lista-caminhoes'); if(!l) return;
-        const statusColors = { 'Ativo': 'bg-green-500/20 text-green-400', 'Parado': 'bg-yellow-500/20 text-yellow-400', 'Oficina': 'bg-red-500/20 text-red-400', 'Inativo': 'bg-gray-500/20 text-gray-400' };
-
-        const getStatusOleo = (t) => {
-          const kmAtual = Number(t.kmAtual || 0);
-          const kmUltima = Number(t.kmUltimaTrocaOleo || 0);
-          const intervalo = Number(t.intervaloOleoKm || 0);
-
-          if (!kmUltima || !intervalo) {
-            return {
-              texto: 'Óleo não configurado',
-              classe: 'bg-gray-500/20 text-gray-400',
-              proximaTroca: null,
-              restante: null
-            };
-          }
-
-          const proximaTroca = kmUltima + intervalo;
-          const restante = proximaTroca - kmAtual;
-
-          if (restante < 0) {
-            return {
-              texto: `🚨 TROCA VENCIDA`,
-              classe: 'bg-red-500/20 text-red-400',
-              proximaTroca,
-              restante
-            };
-          }
-
-          if (restante <= 1000) {
-            return {
-              texto: `⚠️ ATENÇÃO: Troca próxima`,
-              classe: 'bg-yellow-500/20 text-yellow-400',
-              proximaTroca,
-              restante
-            };
-          }
-
-          return {
-            texto: `Óleo em dia`,
-            classe: 'bg-green-500/20 text-green-400',
-            proximaTroca,
-            restante
-          };
-        };
-
-        l.innerHTML = Object.entries(DB.caminhoes).map(([placa, t]) => {
-          const oleo = getStatusOleo(t);
-          return `
-          <div class="glass-card relative hover:border-blue-500 transition border border-[#333]">
-            <div class="absolute top-4 right-4 flex gap-2">
-              <button onclick="App.Handlers.editarCaminhao('${placa}')" class="text-gray-500 hover:text-blue-400"><i data-lucide="edit" class="w-4 h-4"></i></button>
-              <button onclick="App.Handlers.excluirCaminhao('${placa}')" class="text-gray-500 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-            </div>
-            <div class="flex items-center gap-3 mb-2">
-              <p class="text-2xl font-black text-white">${placa}</p>
-              <span class="text-[10px] px-2 py-1 rounded font-bold uppercase tracking-wider ${statusColors[t.status] || statusColors['Ativo']}">${t.status || 'Ativo'}</span>
-            </div>
-            <p class="text-sm text-blue-400 font-bold mb-2">${e(t.modelo)}</p>
-            ${t.observacao ? `<p class="text-xs text-gray-400 italic mb-2">${e(t.observacao)}</p>` : ''}
-            <div class="bg-[#2a2a2a] p-3 rounded-lg mt-3 flex justify-between items-center">
-              <span class="text-xs text-gray-400 font-bold uppercase">KM Atual</span>
-              <span class="font-bold text-white">${t.kmAtual.toLocaleString('pt-BR')} km</span>
-            </div>
-
-            <div class="bg-[#2a2a2a] p-3 rounded-lg mt-3">
-              <div class="flex items-center justify-between gap-3">
-                <span class="text-xs font-bold uppercase ${oleo.classe} px-2 py-1 rounded">
-                  ${oleo.texto}
-                </span>
-              </div>
-              ${
-                oleo.proximaTroca
-                  ? `
-                  <p class="text-xs text-gray-400 mt-2">Próxima troca: <span class="text-white font-bold">${Number(oleo.proximaTroca).toLocaleString('pt-BR')} km</span></p>
-                  <p class="text-xs text-gray-500 mt-1">
-                    ${
-                      oleo.restante >= 0
-                        ? `Faltam ${Number(oleo.restante).toLocaleString('pt-BR')} km`
-                        : `Atrasado ${Number(Math.abs(oleo.restante)).toLocaleString('pt-BR')} km`
-                    }
-                  </p>
-                  `
-                  : `
-                  <p class="text-xs text-gray-500 mt-2">Preencha os dados da troca de óleo no cadastro do caminhão.</p>
-                  `
-              }
-            </div>
-
-            <p class="text-[10px] text-gray-500 mt-3 text-center">Registros: ${t.abastecimentos.length} abastecimentos</p>
-          </div>
-        `;
-        }).join('');
-      },
-
-      renderFretes: () => {
-        if (AppState.perfil === 'motorista') return;
-        const e = Utils.escapeHtml;
-        const isMotorista = AppState.perfil === 'motorista';
-        const l = document.getElementById('lista-fretes'), r = document.getElementById('resumo-fretes'); if (!l || !r) return;
-        const fretes = DB.fretes, despesas = DB.despesas;
-        
-        if (!isMotorista) {
-            const fb = fretes.reduce((a, f) => a + (f.valorFrete || 0), 0);
-            const ar = fretes.reduce((a, f) => a + (f.valorAReceber || 0), 0);
-            const cm = fretes.reduce((a, f) => a + (f.valorMotorista || 0), 0);
-            const desp = despesas.reduce((a, d) => a + (d.valor || 0), 0);
-            const lucroOp = fb - cm - desp;
-
-            r.innerHTML = `
-              <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="glass-card border-l-4 border-blue-500"><p class="text-[10px] text-gray-400 font-bold uppercase mb-1">Faturamento Bruto</p><p class="text-xl sm:text-2xl font-black text-white">${Utils.formatMoney(fb)}</p></div>
-                <div class="glass-card border-l-4 border-yellow-500"><p class="text-[10px] text-gray-400 font-bold uppercase mb-1">A Receber</p><p class="text-xl sm:text-2xl font-black text-yellow-400">${Utils.formatMoney(ar)}</p></div>
-                <div class="glass-card border-l-4 border-gray-500"><p class="text-[10px] text-gray-400 font-bold uppercase mb-1">Custo Previsto Motoristas</p><p class="text-xl sm:text-2xl font-black text-gray-300">${Utils.formatMoney(cm)}</p></div>
-                <div class="glass-card border-l-4 ${lucroOp >= 0 ? 'border-green-500' : 'border-red-500'} relative overflow-hidden">
-                  <p class="text-[10px] text-gray-400 font-bold uppercase mb-1 relative z-10">Lucro Operacional</p><p class="text-xl sm:text-2xl font-black ${lucroOp >= 0 ? 'text-green-400' : 'text-red-400'} relative z-10">${Utils.formatMoney(lucroOp)}</p>
-                </div>
-              </div>`;
-        } else {
-            r.innerHTML = '';
-        }
-
-        if (!fretes.length) { l.innerHTML = `<div class="glass-card text-center text-gray-500 py-10">Nenhum frete registrado.</div>`; return; }
-
-        l.innerHTML = [...fretes].sort((a,b) => new Date(b.data) - new Date(a.data)).map(f => {
-          let bClass = 'bg-green-500/20 text-green-400';
-          if(f.status === 'pendente') bClass = 'bg-red-500/20 text-red-400';
-          if(f.status === 'parcial') bClass = 'bg-yellow-500/20 text-yellow-400';
-          
-          const botoesAcao = isMotorista ? '' : `
-            <div class="absolute top-4 right-4 flex gap-2">
-              <button onclick="App.Handlers.editarFrete('${f.id}')" class="text-gray-500 hover:text-blue-400"><i data-lucide="edit" class="w-4 h-4"></i></button>
-              <button onclick="App.Handlers.excluirFrete('${f.id}')" class="text-gray-500 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-            </div>`;
-
-          const financeiro = isMotorista ? `
-              <div class="bg-[#2a2a2a] p-3 rounded-lg min-w-[200px]">
-                <p class="text-xs text-gray-400 font-bold uppercase">Operação</p>
-                <p class="text-sm text-white mt-1">Frete vinculado ao seu caminhão</p>
-                <p class="text-[10px] text-gray-500 mt-2">Status: ${f.status || '-'}</p>
-              </div>
-            ` : `
-              <div class="bg-[#2a2a2a] p-3 rounded-lg min-w-[200px] grid grid-cols-2 gap-2">
-                <div><p class="text-[10px] text-gray-400 font-bold uppercase">Frete Bruto</p><p class="text-sm font-bold text-white">${Utils.formatMoney(f.valorFrete)}</p></div>
-                <div><p class="text-[10px] text-gray-400 font-bold uppercase">Custo Previsto</p><p class="text-sm font-bold text-gray-400">${Utils.formatMoney(f.valorMotorista)}</p></div>
-                <div><p class="text-[10px] text-green-400 font-bold uppercase">Recebido</p><p class="text-sm font-bold text-green-400">${Utils.formatMoney(f.valorRecebido)}</p></div>
-                <div><p class="text-[10px] text-yellow-400 font-bold uppercase">A Receber</p><p class="text-sm font-bold text-yellow-400">${Utils.formatMoney(f.valorAReceber)}</p></div>
-              </div>
-            `;
-
-          return `
-          <div class="glass-card hover:border-[#444] transition border border-[#333] relative">
-            ${botoesAcao}
-            <div class="flex flex-col lg:flex-row justify-between items-start gap-4 pr-14">
-              <div class="flex-1">
-                <div class="flex items-center gap-3 mb-1"><p class="text-lg font-bold text-white">${e(f.cliente)}</p><span class="text-[10px] px-2 py-1 rounded font-bold uppercase tracking-wider ${bClass}">${f.status}</span></div>
-                <div class="flex flex-wrap gap-2 mt-2">
-                  <span class="text-xs bg-gray-800 text-gray-300 px-2 py-1 rounded"><i data-lucide="truck" class="w-3 h-3 inline mr-1"></i> ${Selectors.getCaminhaoPlaca(f.caminhao)}</span>
-                  <span class="text-xs bg-gray-800 text-gray-300 px-2 py-1 rounded"><i data-lucide="user" class="w-3 h-3 inline mr-1"></i> ${e(Selectors.getMotoristaNome(f.motorista))}</span>
-                </div>
-                ${f.observacao ? `<p class="text-xs text-gray-400 italic mt-3 bg-[#2a2a2a] p-2 rounded border-l-2 border-blue-500">${e(f.observacao)}</p>` : ''}
-                ${f.dataPrevistaRecebimento ? `<p class="text-[10px] text-yellow-400 mt-2 font-bold"><i data-lucide="calendar-clock" class="w-3 h-3 inline mr-1"></i>Previsto para: ${new Date(f.dataPrevistaRecebimento).toLocaleDateString('pt-BR')}</p>` : ''}
-              </div>
-              ${financeiro}
-            </div>
-          </div>`
-        }).join('');
-      },
-
-      renderDespesas: () => {
-        if (AppState.perfil === 'motorista') return;
-        const e = Utils.escapeHtml;
-        const l = document.getElementById('lista-despesas');
-        if (!l) return;
-
-        if (!DB.despesas || !DB.despesas.length) {
-          l.innerHTML = `<div class="glass-card text-center text-gray-500 py-10">Nenhuma despesa.</div>`;
-          return;
-        }
-
-        l.innerHTML = [...DB.despesas].map(d => {
-          const badge = d.origem === 'abastecimento'
-            ? `<span class="text-[9px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded font-bold uppercase">Auto Abast</span>`
-            : (d.origem === 'manutencao'
-              ? `<span class="text-[9px] bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded font-bold uppercase">Auto Manut</span>`
-              : '');
-
-          return `
-            <div class="glass-card flex justify-between items-center border-l-4 border-red-500 relative">
-              <div class="pr-12">
-                <div class="flex items-center gap-2">
-                  <p class="font-bold text-white">${e(d.categoria) || '-'}</p>
-                  ${badge}
-                </div>
-                <p class="text-xs text-gray-500">${d.data ? new Date(d.data).toLocaleDateString('pt-BR') : '-'}</p>
-                <p class="text-sm text-gray-400 mt-1">${e(d.descricao) || '-'}</p>
-              </div>
-              <div class="text-right">
-                <p class="font-black text-red-400 text-lg">${Utils.formatMoney(d.valor || 0)}</p>
-              </div>
-              ${d.origem === 'manual' ? `
-                <div class="absolute top-4 right-4 flex gap-2">
-                  <button onclick="App.Handlers.editarDespesa('${d.id}')" class="text-gray-500 hover:text-blue-400"><i data-lucide="edit" class="w-4 h-4"></i></button>
-                  <button onclick="App.Handlers.excluirDespesa('${d.id}')" class="text-gray-500 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                </div>
-              ` : ''}
-            </div>
-          `;
-        }).join('');
-      },
-
-      renderMotoristas: () => {
-        if (AppState.perfil === 'motorista') return;
-        const e = Utils.escapeHtml;
-        const l = document.getElementById('lista-motoristas'); if (!l) return;
-        if (!DB.motoristas.length) { l.innerHTML = `<div class="glass-card text-center text-gray-500 py-10">Nenhum motorista.</div>`; return; }
-        
-        l.innerHTML = DB.motoristas.map(m => {
-          const r = Selectors.getResumoMotorista(m.id);
-          const lancs = Selectors.getLancamentosMotorista(m.id).slice(0, 3);
-          const trs = lancs.length ? lancs.map(x => {
-            const isAuto = x.origem === 'abastecimento';
-            return `
-            <div class="flex justify-between items-center py-2 border-b border-[#333] last:border-0 group">
-              <div>
-                <p class="text-xs text-gray-300 font-bold uppercase flex items-center gap-2">
-                  ${x.tipo} ${isAuto ? `<span class="text-[9px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded uppercase">Auto Abast</span>` : ''}
-                </p>
-                <p class="text-[10px] text-gray-500">${e(x.descricao)}</p>
-              </div>
-              <div class="text-right flex items-center gap-3">
-                <p class="text-sm font-bold ${['pagamento','adiantamento','desconto'].includes(x.tipo) ? 'text-green-400' : 'text-yellow-400'}">${Utils.formatMoney(x.valor)}</p>
-                ${!isAuto ? `
-                <button onclick="App.Handlers.editarLancamentoMotorista('${x.id}')" class="text-gray-600 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition"><i data-lucide="edit" class="w-3 h-3"></i></button>
-                <button onclick="App.Handlers.excluirLancamentoMotorista('${x.id}')" class="text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash" class="w-3 h-3"></i></button>
-                ` : '<div class="w-12"></div>'}
-              </div>
-            </div>`
-          }).join('') : '<p class="text-xs text-gray-500 italic py-2">Sem lançamentos recentes</p>';
-
-          return `
-          <div class="glass-card relative border border-[#333] ${m.status === 'Inativo' ? 'opacity-50' : ''}">
-            <div class="absolute top-4 right-4 flex gap-2">
-              <button onclick="App.Handlers.editarMotorista('${m.id}')" class="text-gray-500 hover:text-blue-400"><i data-lucide="edit" class="w-4 h-4"></i></button>
-              <button onclick="App.Handlers.excluirMotorista('${m.id}')" class="text-gray-500 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-            </div>
-            <div class="flex flex-col xl:flex-row justify-between gap-6 pr-12">
-              <div class="flex-1">
-                <div class="flex items-center gap-3"><p class="text-xl font-bold text-white">${e(m.nome)}</p></div>
-                <p class="text-xs text-gray-500 mt-1">Doc: ${e(m.documento)||'--'} | Tel: ${e(m.telefone)||'--'} | Tipo: ${m.tipoPagamento} | PIX: ${e(m.pix)||'--'}</p>
-                <div class="mt-4 bg-[#2a2a2a] rounded-lg p-3">
-                  <p class="text-xs text-gray-400 font-bold mb-2 uppercase">Últimos Lançamentos Reais</p>
-                  ${trs}
-                </div>
-              </div>
-              <div class="bg-[#1a1a1a] p-4 rounded-lg min-w-[220px] flex flex-col justify-between border border-[#333]">
                 <div>
-                  <div class="flex justify-between mb-2"><span class="text-xs text-gray-400 uppercase font-bold">Total Devido</span><span class="text-sm font-bold text-yellow-400">${Utils.formatMoney(r.totalDevido)}</span></div>
-                  <div class="flex justify-between mb-2 pb-2 border-b border-[#333]"><span class="text-xs text-gray-400 uppercase font-bold">Total Pago</span><span class="text-sm font-bold text-green-400">${Utils.formatMoney(r.totalPago)}</span></div>
-                  <div class="flex justify-between mt-2"><span class="text-xs text-white uppercase font-black">Saldo</span><span class="text-lg font-black ${r.saldoPendente < 0 ? 'text-blue-400' : 'text-red-400'}">${Utils.formatMoney(r.saldoPendente)}</span></div>
+                    <h1 class="text-xl md:text-2xl font-bold tracking-tight text-slate-900 dark:text-white transition-colors duration-300">Conciliador PRO</h1>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm transition-colors duration-300">Auditoria Inteligente de Estoque</p>
                 </div>
-              </div>
             </div>
-          </div>`;
-        }).join('');
-      },
-
-      renderAbastecimento: () => {
-        const t = Selectors.getTruckAtual();
-        const mEl = document.getElementById('display-media'), cEl = document.getElementById('display-custokm'), lEl = document.getElementById('lista-abastecimentos-recentes');
-        
-        if(!t || !t.abastecimentos || !t.abastecimentos.length) {
-          if(mEl) mEl.innerHTML = `-- <span class="text-sm font-normal text-gray-500">km/l</span>`;
-          if(cEl) cEl.innerText = 'R$ --';
-          if(lEl) lEl.innerHTML = '<p class="text-xs text-gray-500 italic py-2">Nenhum registro para este caminhão.</p>';
-          return;
-        }
-        
-        const u = t.abastecimentos[t.abastecimentos.length-1];
-        if(mEl) mEl.innerHTML = `${u.media.toFixed(2)} <span class="text-sm font-normal text-gray-500">km/l</span>`;
-        if(cEl) cEl.innerText = Utils.formatMoney(u.custoKm);
-        
-        if(lEl) {
-           lEl.innerHTML = [...t.abastecimentos].sort((a,b) => new Date(b.data) - new Date(a.data)).slice(0,5).map(a => `
-             <div class="flex justify-between items-center py-2 border-b border-[#333] last:border-0">
-               <div>
-                 <p class="text-xs text-white font-bold">${a.litros}L a ${Utils.formatMoney(a.valor)}</p>
-                 <p class="text-[10px] text-gray-500">KM: ${a.kmAtual} | ${new Date(a.data).toLocaleDateString('pt-BR')}</p>
-               </div>
-               ${AppState.perfil !== 'motorista' ? `<button onclick="App.Handlers.excluirAbastecimento('${DB.caminhaoAtual}', '${a.id}')" class="text-gray-600 hover:text-red-500 transition"><i data-lucide="trash" class="w-4 h-4"></i></button>` : ''}
-             </div>`
-           ).join('');
-        }
-      },
-
-      renderHistorico: () => {
-        const e = Utils.escapeHtml;
-        const l = document.getElementById('lista-historico');
-        if (!l) return;
-
-        let eventos = [];
-
-        DB.fretes.forEach(f => eventos.push({
-          data: f.data,
-          tipo: 'Frete',
-          desc: `${e(f.cliente)} | ${e(Selectors.getMotoristaNome(f.motorista))}`,
-          valor: f.valorFrete || 0,
-          icon: 'map',
-          color: 'text-green-400'
-        }));
-
-        DB.despesas.forEach(d => eventos.push({
-          data: d.data,
-          tipo: `Despesa: ${e(d.categoria) || '-'}`,
-          desc: e(d.descricao) || '-',
-          valor: -(Number(d.valor || 0)),
-          icon: 'receipt',
-          color: 'text-red-400'
-        }));
-
-        DB.manutencoes.forEach(m => eventos.push({
-          data: m.data,
-          tipo: `Manutenção: ${e(m.categoria) || '-'}`,
-          desc: e(m.descricao) || '-',
-          valor: -(Number(m.valor || 0)),
-          icon: 'wrench',
-          color: 'text-yellow-400'
-        }));
-
-        Object.values(DB.caminhoes).forEach(c => {
-          (c.abastecimentos || []).forEach(a => eventos.push({
-            data: a.data,
-            tipo: 'Abastecimento',
-            desc: `${e(c.placa)} | ${a.litros}L`,
-            valor: -(Number(a.valor || 0)),
-            icon: 'fuel',
-            color: 'text-blue-400'
-          }));
-        });
-
-        if (!eventos.length) {
-          l.innerHTML = `<div class="glass-card text-center text-gray-500 py-10">Histórico vazio.</div>`;
-          return;
-        }
-
-        l.innerHTML = eventos
-          .sort((a, b) => new Date(b.data) - new Date(a.data))
-          .slice(0, 30)
-          .map(ev => `
-            <div class="glass-card flex items-start justify-between py-3 border-l-2 border-[#333] min-w-0">
-              <div class="flex items-start gap-4 min-w-0">
-                <div class="p-2 rounded-full bg-[#2a2a2a] shrink-0">
-                  <i data-lucide="${ev.icon}" class="${ev.color} w-4 h-4"></i>
-                </div>
-                <div class="min-w-0">
-                  <p class="text-sm font-bold text-white uppercase truncate">${e(ev.tipo)}</p>
-                  <p class="text-xs text-gray-400 break-words mt-1">${e(ev.desc)}</p>
-                  <p class="text-[10px] text-gray-500 mt-1">${ev.data ? new Date(ev.data).toLocaleDateString('pt-BR') : '-'}</p>
-                </div>
-              </div>
-              ${AppState.perfil !== 'motorista' && ev.valor !== 0 ? `
-                <p class="font-bold shrink-0 ml-3 ${ev.valor > 0 ? 'text-green-400' : 'text-red-400'}">
-                  ${ev.valor > 0 ? '+' : ''}${Utils.formatMoney(ev.valor)}
-                </p>
-              ` : ''}
-            </div>
-          `).join('');
-      },
-
-      renderManutencao: () => {
-        const e = Utils.escapeHtml;
-        const l = document.getElementById('lista-manutencao');
-        if (!l) return;
-
-        const truck = Selectors.getTruckAtual();
-
-        const manutencoes = (DB.manutencoes || []).filter(m => {
-          if (!truck) return false;
-          if (AppState.perfil === 'motorista') {
-            return m.caminhao_id === truck.id;
-          }
-          return true;
-        });
-
-        if (!manutencoes.length) {
-          l.innerHTML = `
-            <div class="glass-card text-center text-gray-500 py-10 col-span-full">
-              Nenhum registro de manutenção.
-            </div>
-          `;
-          return;
-        }
-
-        l.innerHTML = manutencoes.map(m => `
-          <div class="glass-card flex justify-between items-start border-l-4 border-yellow-500 relative">
-            <div class="pr-12">
-              <p class="font-bold text-white uppercase">${e(m.categoria) || 'Manutenção'}</p>
-              <p class="text-xs text-gray-500 mt-1">${m.data ? new Date(m.data).toLocaleDateString('pt-BR') : '-'}</p>
-              <p class="text-sm text-gray-300 mt-2">${e(m.descricao) || '-'}</p>
-              ${m.observacao ? `<p class="text-xs text-gray-500 mt-2 italic">${e(m.observacao)}</p>` : ''}
-              <p class="text-xs text-yellow-400 mt-2 font-bold">KM: ${Number(m.km_atual || 0).toLocaleString('pt-BR')}</p>
-            </div>
-            <div class="text-right">
-              ${AppState.perfil !== 'motorista' ? `<p class="font-black text-yellow-400 text-lg">${Utils.formatMoney(m.valor || 0)}</p>` : ''}
-            </div>
-            ${AppState.perfil !== 'motorista' ? `
-              <div class="absolute top-4 right-4 flex gap-2">
-                <button onclick="App.Handlers.excluirManutencao('${m.id}')" class="text-gray-500 hover:text-red-500">
-                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+            <div class="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scroll">
+                <button onclick="toggleDarkMode()" class="px-3 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-300 flex items-center justify-center">
+                    <svg id="icon-sun" class="w-5 h-5 hidden dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                    <svg id="icon-moon" class="w-5 h-5 block dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
                 </button>
-              </div>
-            ` : ''}
-          </div>
-        `).join('');
-      },
-
-      renderOleo: () => {
-        const container = document.getElementById('oleo-content');
-        if (!container) return;
-
-        const caminhao = Selectors.getTruckAtual();
-
-        if (!caminhao) {
-          container.innerHTML = `<p>Nenhum caminhão encontrado.</p>`;
-          return;
-        }
-
-        const kmAtual = Number(caminhao.kmAtual || 0);
-        const kmUltima = Number(caminhao.kmUltimaTrocaOleo || 0);
-        const intervalo = Number(caminhao.intervaloOleoKm || 0);
-
-        if (!kmUltima || !intervalo) {
-          container.innerHTML = `
-            <div class="card">
-              <h2>Óleo - ${caminhao.placa}</h2>
-              <p>Óleo não configurado ainda.</p>
+                <button onclick="abrirManual()" class="px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition shadow-sm text-sm flex items-center justify-center gap-2">Manual</button>
+                <button onclick="abrirGerenciador()" class="px-4 py-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 font-semibold rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition shadow-sm text-sm flex items-center justify-center gap-2 whitespace-nowrap">Memória / Backup</button>
             </div>
-          `;
-          return;
+        </header>
+
+        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 transition-colors duration-300">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                        <span class="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span> Estoque A (Sistema 1)
+                    </label>
+                    <div id="dropA" class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-3 hover:bg-slate-50 dark:hover:bg-indigo-900/10 transition-colors duration-300 relative text-slate-400">
+                        <input type="file" id="fileA" accept=".xlsx, .xls, .csv" class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 dark:file:bg-emerald-900/30 dark:file:text-emerald-400 cursor-pointer outline-none transition-all"/>
+                        <div id="loadingA" class="hidden absolute inset-0 bg-white/80 dark:bg-slate-900/80 flex items-center justify-center rounded-xl z-10 font-bold text-indigo-600">Lendo Arquivo...</div>
+                    </div>
+                </div>
+                <div>
+                    <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                        <span class="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]"></span> Estoque B (Sistema 2)
+                    </label>
+                    <div id="dropB" class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-3 hover:bg-slate-50 dark:hover:bg-indigo-900/10 transition-colors duration-300 relative text-slate-400">
+                        <input type="file" id="fileB" accept=".xlsx, .xls, .csv" class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900/30 dark:file:text-blue-400 cursor-pointer outline-none transition-all"/>
+                        <div id="loadingB" class="hidden absolute inset-0 bg-white/80 dark:bg-slate-900/80 flex items-center justify-center rounded-xl z-10 font-bold text-indigo-600">Lendo Arquivo...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+                <button id="btnProcessar" onclick="iniciarCruzamento()" class="flex-1 min-w-[200px] bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white font-semibold py-3.5 px-6 rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-2">
+                    Processar Auditoria
+                </button>
+                <button onclick="buscarSugestoesIA()" id="btnIA" class="hidden min-w-[200px] bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 hover:bg-amber-100 font-semibold py-3.5 px-6 rounded-xl shadow-sm transition-all duration-300 flex items-center justify-center gap-2">
+                    Buscar Similares via IA
+                </button>
+                <button id="btnExportExcel" onclick="exportarExcelResultado()" class="hidden min-w-[200px] bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 px-6 rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-2">
+                    Baixar Relatório (.xlsx)
+                </button>
+            </div>
+        </div>
+
+        <div id="areaTabela" class="hidden">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+                <div id="card-all" onclick="aplicarFiltro('all')" class="card-kpi ring-2 ring-indigo-500 scale-105 bg-white dark:bg-slate-800 rounded-xl p-4 flex flex-col justify-center transition-colors">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Pesquisa</span>
+                    <span class="text-2xl font-bold mt-1 text-slate-900 dark:text-white" id="kpiTotal">0</span>
+                </div>
+                <div id="card-ok" onclick="aplicarFiltro('ok')" class="card-kpi bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-800 rounded-xl p-4 flex flex-col justify-center transition-colors">
+                    <span class="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Bateu (OK)</span>
+                    <span class="text-2xl font-bold text-emerald-700 dark:text-emerald-400 mt-1" id="kpiOk">0</span>
+                </div>
+                <div id="card-div" onclick="aplicarFiltro('div')" class="card-kpi bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-800 rounded-xl p-4 flex flex-col justify-center transition-colors">
+                    <span class="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Divergências</span>
+                    <span class="text-2xl font-bold text-amber-700 dark:text-amber-400 mt-1" id="kpiDiv">0</span>
+                </div>
+                <div id="card-soa" onclick="aplicarFiltro('soa')" class="card-kpi bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-800 rounded-xl p-4 flex flex-col justify-center transition-colors">
+                    <span class="text-xs font-semibold text-rose-700 dark:text-rose-400 uppercase tracking-wider">Só no A</span>
+                    <span class="text-2xl font-bold text-rose-700 dark:text-rose-400 mt-1" id="kpiSoA">0</span>
+                </div>
+                <div id="card-sob" onclick="aplicarFiltro('sob')" class="card-kpi bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-800 rounded-xl p-4 flex flex-col justify-center transition-colors">
+                    <span class="text-xs font-semibold text-rose-700 dark:text-rose-400 uppercase tracking-wider">Só no B</span>
+                    <span class="text-2xl font-bold text-rose-700 dark:text-rose-400 mt-1" id="kpiSoB">0</span>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <input type="text" id="inputBusca" oninput="debounceBusca()" placeholder="Pesquisar por nome ou código..." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-5 py-3 outline-none focus:ring-2 focus:ring-indigo-500 transition-all dark:text-white">
+            </div>
+
+            <div class="table-container bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-colors rounded-xl">
+                <table class="w-full text-sm text-left min-w-[700px]" id="tabelaPrincipal">
+                    <thead>
+                        <tr class="border-b border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200">
+                            <th colspan="4" class="p-3 text-center font-bold border-r border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">LADO A</th>
+                            <th class="p-3 text-center text-slate-500 dark:text-slate-400 text-xs font-bold uppercase w-24 border-r border-slate-200 dark:border-slate-800">Status</th>
+                            <th colspan="4" class="p-3 text-center font-bold bg-slate-50 dark:bg-slate-800/50">LADO B</th>
+                        </tr>
+                        <tr class="text-slate-500 dark:text-slate-400 text-xs uppercase border-b-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+                            <th class="p-3 w-12 text-center whitespace-nowrap">Ações</th>
+                            <th class="p-3 w-[30%]">Produto (A)</th>
+                            <th class="p-3 w-10 text-center">UM</th>
+                            <th class="p-3 w-16 text-right border-r">Qtd</th>
+                            <th class="p-3 w-24 text-center bg-slate-50 dark:bg-slate-800/30 border-r">Resultado</th>
+                            <th class="p-3 w-12 text-center">Ações</th>
+                            <th class="p-3 w-[30%]">Produto (B)</th>
+                            <th class="p-3 w-10 text-center">UM</th>
+                            <th class="p-3 w-16 text-right">Qtd</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyMatriz" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DO MANUAL DETALHADO -->
+    <div id="manualModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4 transition-opacity">
+        <div class="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl shadow-xl max-w-4xl w-full flex flex-col h-[90vh] border border-slate-100 dark:border-slate-800 transition-colors">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-200 dark:border-slate-800 pb-4 text-indigo-600 dark:text-indigo-400">
+                <h3 class="text-xl md:text-2xl font-bold flex items-center gap-2">Guia de Operação Estratégica</h3>
+                <button onclick="fecharManual()" class="text-slate-400 hover:text-slate-600 bg-slate-100 dark:bg-slate-800 p-2 rounded-lg">✕</button>
+            </div>
+            <div class="overflow-y-auto flex-1 pr-2 space-y-6 text-slate-700 dark:text-slate-300 text-sm md:text-base leading-relaxed">
+                <section>
+                    <h4 class="font-bold text-slate-900 dark:text-white">1. 🤖 Motor de IA Heurística</h4>
+                    <p>O sistema processa dados mesmo sem cabeçalhos. Ele analisa matematicamente as primeiras 30 linhas:</p>
+                    <ul class="list-disc pl-5 mt-2 space-y-1">
+                        <li><strong>Quantidade:</strong> Identificada por valores decimais (ex: 573.00).</li>
+                        <li><strong>Descrição:</strong> Identificada por densidade de texto e presença de espaços.</li>
+                        <li><strong>Código:</strong> Identificado por zeros à esquerda ou cadeias alfanuméricas sem espaços.</li>
+                    </ul>
+                </section>
+                <section>
+                    <h4 class="font-bold text-slate-900 dark:text-white">2. ⚡ Processamento ETL de Alta Precisão</h4>
+                    <p>Antes do cruzamento, o motor realiza uma limpeza cirúrgica: Normaliza textos (remove acentos), elimina espaços duplos e ignora linhas vazias ou "fantasmas".</p>
+                </section>
+                <section>
+                    <h4 class="font-bold text-slate-900 dark:text-white">3. 📊 Dashboard e Filtros Dinâmicos</h4>
+                    <p>Os contadores e cartões superiores são vivos. Eles atualizam conforme você pesquisa ou altera o status da auditoria, permitindo focar em Divergências ou Furos de Estoque.</p>
+                </section>
+                <section>
+                    <h4 class="font-bold text-slate-900 dark:text-white">4. 🔗 Uniões e Rastreabilidade</h4>
+                    <p>O sistema concatena os códigos de produtos unidos (ex: `101 / 205`) e grava essas regras para sempre, eliminando o retrabalho em auditorias futuras.</p>
+                </section>
+                <section>
+                    <h4 class="font-bold text-slate-900 dark:text-white">5. 🧠 Memória JSON e Portabilidade</h4>
+                    <p>Toda a inteligência gerada pode ser exportada em um arquivo .JSON. Isso permite compartilhar as regras com toda a equipe ou migrar de computador sem perder nada.</p>
+                </section>
+                <section>
+                    <h4 class="font-bold text-slate-900 dark:text-white">6. 📥 Relatórios Executivos</h4>
+                    <p>Ao finalizar, o botão <strong>Baixar Relatório (.xlsx)</strong> gera uma nova planilha respeitando seus filtros ativos e calculando automaticamente a coluna de Diferença.</p>
+                </section>
+            </div>
+            <div class="mt-6 flex justify-end"><button onclick="fecharManual()" class="bg-indigo-600 text-white px-8 py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition">Fechar Guia</button></div>
+        </div>
+    </div>
+
+    <!-- MODAL MEMORIA -->
+    <div id="regrasModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-xl max-w-4xl w-full h-[85vh] flex flex-col border border-slate-100 dark:border-slate-800">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Gestão de Memória</h3>
+                <div class="flex gap-2">
+                    <button onclick="exportarBackup()" class="text-xs bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 px-3 py-1 rounded font-bold border border-emerald-200">Exportar .JSON</button>
+                    <button onclick="document.getElementById('fileImportBackup').click()" class="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 px-3 py-1 rounded font-bold border border-blue-200">Importar .JSON</button>
+                </div>
+            </div>
+            <div class="flex gap-2 mb-4 border-b border-slate-200 dark:border-slate-800 pb-2">
+                <button onclick="mudarAba('mesclas')" id="abaMesclas" class="px-4 py-2 text-sm font-semibold rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700">Uniões</button>
+                <button onclick="mudarAba('exclusoes')" id="abaExclusoes" class="px-4 py-2 text-sm font-semibold rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Lixeira</button>
+            </div>
+            <div id="conteudoMesclas" class="overflow-y-auto flex-1 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl border">
+                <table class="w-full text-sm text-left"><tbody id="tbodyRegras" class="divide-y"></tbody></table>
+            </div>
+            <div id="conteudoExclusoes" class="overflow-y-auto flex-1 hidden flex flex-col md:flex-row gap-4">
+                <div class="flex-1 border rounded-xl overflow-hidden bg-white dark:bg-slate-900"><div class="bg-slate-50 dark:bg-slate-900 p-2 border-b font-bold text-xs">Excluídos Lado A</div><table class="w-full text-sm"><tbody id="tbodyExcluidosA" class="divide-y"></tbody></table></div>
+                <div class="flex-1 border rounded-xl overflow-hidden bg-white dark:bg-slate-900"><div class="bg-slate-50 dark:bg-slate-900 p-2 border-b font-bold text-xs">Excluídos Lado B</div><table class="w-full text-sm"><tbody id="tbodyExcluidosB" class="divide-y"></tbody></table></div>
+            </div>
+            <div class="mt-4 flex gap-3">
+                <button onclick="abrirConfirmacaoLimpeza()" class="text-xs bg-red-50 text-red-600 px-4 py-2 rounded-xl font-bold">Limpar Tudo</button>
+                <button onclick="fecharGerenciador()" class="flex-1 bg-indigo-600 text-white py-2 rounded-xl font-bold">Concluído</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CONFIRMAÇÃO (CUSTOM) -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center z-[60] p-4">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-2xl max-w-sm w-full text-center border dark:border-slate-800">
+            <div class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">⚠️</div>
+            <h3 class="text-lg font-bold mb-2">Tem certeza?</h3>
+            <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Esta ação apagará permanentemente todas as memórias de união e exclusão. Não há como desfazer.</p>
+            <div class="flex gap-2">
+                <button onclick="fecharConfirmacao()" class="flex-1 bg-slate-100 dark:bg-slate-800 py-2 rounded-xl font-bold">Cancelar</button>
+                <button onclick="executarLimpezaTotal()" class="flex-1 bg-red-600 text-white py-2 rounded-xl font-bold">Sim, Apagar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL IA -->
+    <div id="aiModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-xl max-w-3xl w-full h-[80vh] flex flex-col border">
+            <h3 class="text-xl font-bold mb-4">Sugestões de IA</h3>
+            <div class="flex-1 overflow-y-auto space-y-3 pr-2" id="aiSugestoesLista"></div>
+            <div class="mt-4 flex gap-2"><button onclick="fecharModalIA()" class="flex-1 bg-slate-200 dark:bg-slate-800 rounded-xl py-2 font-bold">Cancelar</button><button onclick="aplicarMesclasEmLote()" class="flex-1 bg-indigo-600 text-white rounded-xl py-2 font-bold shadow-lg">Aplicar Selecionados</button></div>
+        </div>
+    </div>
+
+    <!-- Barra de Correlação Superior -->
+    <div id="barraCorrelação" class="fixed top-6 left-1/2 transform -translate-x-1/2 -translate-y-24 opacity-0 bg-slate-900 dark:bg-indigo-900 text-white px-6 py-4 rounded-xl shadow-2xl transition-all duration-300 z-50 flex items-center gap-4 border border-slate-700 pointer-events-none">
+        <div><p class="font-bold text-sm">Unir com qual produto?</p><p class="text-indigo-300 font-mono text-xs mt-0.5 truncate max-w-[250px]" id="nomeSelecionado"></p></div>
+        <button onclick="cancelarCorrelação()" class="ml-4 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold py-1.5 px-3 rounded-lg pointer-events-auto">Cancelar</button>
+    </div>
+
+    <!-- Toast Notificacao -->
+    <div id="toastNotificacao" class="fixed top-6 right-6 transform translate-x-full opacity-0 bg-slate-900 dark:bg-indigo-900 text-white px-6 py-4 rounded-xl shadow-2xl transition-all duration-500 z-50 flex items-center gap-3 border border-slate-700">
+        <span class="text-2xl">🤖</span>
+        <div><p class="font-bold text-sm" id="toastTitulo">Aviso</p><p class="text-indigo-300 text-xs mt-0.5 max-w-[200px]" id="toastMsg"></p></div>
+    </div>
+
+    <script>
+        // --- ESTADO E CONFIGURAÇÃO ---
+        let processedData = { dictA: {}, dictB: {}, listaFinal: [] };
+        let dadosRawA = []; let dadosRawB = [];
+        let dicionarioMescla = JSON.parse(localStorage.getItem('dicMesclaV6')) || {};
+        let exclusoes = JSON.parse(localStorage.getItem('exclusoesV6') || '{"A":[],"B":[]}');
+        const palavrasExcluidasFixas = ["BICO", "FILTRO"]; 
+        let produtoAguardandoCorrelacao = null; let idLinhaAguardando = null; let mesclasEmLote = {}; 
+        let filtroStatus = 'all'; let filtroBusca = '';
+
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            html.classList.toggle('dark');
+            localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
         }
 
-        const proxima = kmUltima + intervalo;
-        const faltam = proxima - kmAtual;
+        function esc(str) { return str ? str.replace(/'/g, "\\'") : ""; }
 
-        let status = '';
-        let cor = '';
-
-        if (faltam < 0) {
-          status = '🚨 TROCA VENCIDA';
-          cor = '#ef4444';
-        } else if (faltam <= 1000) {
-          status = '⚠️ ATENÇÃO: Troca próxima';
-          cor = '#facc15';
-        } else {
-          status = '🟢 Óleo em dia';
-          cor = '#22c55e';
+        function aplicarDicionario(nomeNormalizado) {
+            let atual = nomeNormalizado; let maxLoops = 10;
+            while (dicionarioMescla[atual] && maxLoops > 0) { atual = dicionarioMescla[atual]; maxLoops--; }
+            return atual;
         }
 
-        container.innerHTML = `
-          <div style="background:#1f1f1f;padding:16px;border-radius:10px">
-            <h2>Óleo - ${caminhao.placa}</h2>
-
-            <p>KM Atual: <b>${kmAtual.toLocaleString('pt-BR')}</b></p>
-            <p>Última troca: <b>${kmUltima.toLocaleString('pt-BR')}</b></p>
-            <p>Próxima troca: <b>${proxima.toLocaleString('pt-BR')}</b></p>
-
-            <p style="color:${cor};font-weight:bold;margin-top:10px">
-              ${status}
-            </p>
-
-            <p style="opacity:0.7">
-              ${
-                faltam >= 0
-                  ? `Faltam ${faltam.toLocaleString('pt-BR')} km`
-                  : `Atrasado ${Math.abs(faltam).toLocaleString('pt-BR')} km`
-              }
-            </p>
-          </div>
-        `;
-      }
-    };
-
-    const App = {
-      Auth: {
-        async handleLogin() {
-          const email = document.getElementById('login-email').value.trim();
-          const password = document.getElementById('login-password').value.trim();
-          const errorEl = document.getElementById('login-error');
-
-          errorEl.classList.add('hidden');
-          errorEl.innerText = '';
-
-          if (!email || !password) {
-            errorEl.innerText = 'Preencha email e senha.';
-            errorEl.classList.remove('hidden');
-            return;
-          }
-
-          try {
-            const { data, error } = await supabaseClient.auth.signInWithPassword({
-              email,
-              password
-            });
-
-            if (error) throw error;
-
-            await App.Auth.loadUserProfile(data.user);
-            document.getElementById('login-screen').classList.add('hidden');
-            App.showMessage('Sucesso', 'Login realizado com sucesso.', 'check-circle', 'green');
-          } catch (err) {
-            errorEl.innerText = err.message || 'Erro ao entrar.';
-            errorEl.classList.remove('hidden');
-          }
-        },
-
-        async loadUserProfile(user) {
-          const { data, error } = await supabaseClient
-            .from('usuarios_empresa')
-            .select('empresa_id, perfil, nome')
-            .eq('user_id', user.id)
-            .single();
-
-          if (error) throw error;
-
-          AppState.user = user;
-          AppState.empresaId = data.empresa_id;
-          AppState.perfil = data.perfil;
-          AppState.nome = data.nome;
-
-          if (AppState.perfil === 'motorista') {
-            await carregarMotoristaLogado();
-            await carregarMotoristas();
-            await carregarAbastecimentos();
-            await carregarManutencoes();
-            await carregarFinanceiroMotoristas();
-          } else {
-            await carregarCaminhoes();
-            await carregarMotoristas();
-            await carregarFretes();
-            await carregarAbastecimentos();
-            await carregarManutencoes();
-            await carregarDespesas();
-            await carregarFinanceiroMotoristas();
-          }
-
-          App.applyPermissions();
-          UI.sync();
-        },
-
-        async checkSession() {
-          const { data, error } = await supabaseClient.auth.getSession();
-          if (error) throw error;
-
-          const session = data.session;
-
-          if (!session) {
-            document.getElementById('login-screen').classList.remove('hidden');
-            return false;
-          }
-
-          await App.Auth.loadUserProfile(session.user);
-          document.getElementById('login-screen').classList.add('hidden');
-          return true;
-        },
-
-        async logout() {
-          await supabaseClient.auth.signOut();
-          location.reload();
-        }
-      },
-
-      applyPermissions: () => {
-        const isMotorista = AppState.perfil === 'motorista';
-
-        const hiddenForMotorista = [
-          'tab-fretes',
-          'tab-despesas',
-          'tab-motoristas',
-          'tab-caminhoes',
-          'tab-historico',
-
-          'side-nav-fretes',
-          'side-nav-despesas',
-          'side-nav-motoristas',
-          'side-nav-caminhoes',
-          'side-nav-historico',
-
-          'nav-fretes',
-          'nav-despesas',
-          'nav-motoristas',
-          'nav-caminhoes',
-          'nav-historico',
-
-          'btn-novo-frete'
-        ];
-
-        const hiddenForAdmin = [
-          'side-nav-oleo',
-          'nav-oleo',
-          'tab-oleo'
-        ];
-
-        if (isMotorista) {
-          hiddenForMotorista.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = 'none';
-          });
-
-          ['div-abs-motorista', 'div-abs-adiantamento', 'div-abs-frete', 'div-abs-custo-km'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = 'none';
-          });
-
-          // garante que a aba oleo fique visível para motorista
-          ['side-nav-oleo', 'nav-oleo', 'tab-oleo'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = '';
-          });
-
-          App.setTab('abastecimento');
-        } else {
-          hiddenForAdmin.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = 'none';
-          });
-        }
-      },
-
-      init: async () => {
-        Storage.load();
-        UI.sync();
-
-        // Checagem visual brutal pra falha de DNS / Supabase deletado
-        if (window.SUPABASE_CONNECTION_ERROR) {
-            document.getElementById('login-screen').classList.remove('hidden');
-            const errEl = document.getElementById('login-error');
-            if (errEl) {
-              errEl.innerHTML = `<b>Falha Crítica de Rede (DNS/URL)</b><br>O servidor Supabase não foi encontrado.<br>O projeto foi pausado/excluído ou a URL está errada.`;
-              errEl.classList.remove('hidden');
-            }
-            return; // Trava aqui, nem tenta autenticar
+        function calcularSimilaridade(s1, s2) {
+            if (s1 === s2) return 1.0;
+            if (s1.length < 2 || s2.length < 2) return 0.0;
+            let bigrams1 = new Map();
+            for (let i = 0; i < s1.length - 1; i++) { const big = s1.substr(i, 2); bigrams1.set(big, (bigrams1.get(big) || 0) + 1); }
+            let intersection = 0;
+            for (let i = 0; i < s2.length - 1; i++) { const big = s2.substr(i, 2); const count = bigrams1.get(big); if (count > 0) { intersection++; bigrams1.set(big, count - 1); } }
+            return (2.0 * intersection) / (s1.length + s2.length - 2);
         }
 
-        try {
-          const logged = await App.Auth.checkSession();
-
-          if (logged) {
-             const defaultTab = AppState.perfil === 'motorista' ? 'abastecimento' : 'fretes';
-             App.setTab(defaultTab);
-          }
-        } catch (e) {
-          console.error(e);
-          document.getElementById('login-screen').classList.remove('hidden');
-          
-          // Se o checkSession estourar Failed to fetch antes do timeout do log visual
-          if (e.message === 'Failed to fetch') {
-              const errEl = document.getElementById('login-error');
-              if (errEl) {
-                  errEl.innerHTML = `<b>Falha Crítica de Rede (DNS/URL)</b><br>O servidor Supabase não foi encontrado.<br>Projeto pausado ou URL inválida.`;
-                  errEl.classList.remove('hidden');
-              }
-          } else {
-              App.showMessage('Erro', e.message || 'Erro ao verificar sessão.', 'alert-triangle', 'red');
-          }
-        }
-      },
-      
-      showConfirmModal: (title, text, icon = 'help-circle', color = 'blue') => {
-        return new Promise((resolve) => {
-          const m = document.getElementById('confirm-modal');
-          const colorMap = { blue: 'text-blue-500', red: 'text-red-500', yellow: 'text-yellow-500' };
-          document.getElementById('confirm-title').innerText = title; document.getElementById('confirm-text').innerText = text;
-          document.getElementById('confirm-icon').innerHTML = `<i data-lucide="${icon}" class="${colorMap[color]} w-6 h-6"></i>`;
-          lucide.createIcons();
-          const ok = document.getElementById('confirm-btn-ok'), cancel = document.getElementById('confirm-btn-cancel');
-          const clean = () => { m.classList.add('hidden'); ok.onclick=null; cancel.onclick=null; };
-          ok.onclick = () => { clean(); resolve(true); }; cancel.onclick = () => { clean(); resolve(false); };
-          m.classList.remove('hidden');
-        });
-      },
-
-      showFormModal: (title, fields, submitText = 'Salvar') => {
-        return new Promise((resolve) => {
-          const m = document.getElementById('form-modal');
-          document.getElementById('form-title').innerText = title;
-          const body = document.getElementById('form-body'); body.innerHTML = '';
-
-          fields.forEach(f => {
-            let input = '';
-            if (f.type === 'select') {
-              const opts = f.options.map(o => `<option value="${o.value}" ${f.value == o.value ? 'selected':''} class="text-black">${o.label}</option>`).join('');
-              input = `<select id="${f.id}" ${f.disabled?'disabled':''} class="w-full bg-[#2a2a2a] border border-[#444] rounded-lg p-3 text-white focus:border-blue-500 ${f.disabled?'opacity-50 cursor-not-allowed':''}">${opts}</select>`;
-            } else {
-              input = `<input type="${f.type}" id="${f.id}" value="${f.value||''}" placeholder="${f.placeholder||''}" ${f.step?`step="${f.step}"`:''} ${f.disabled?'disabled':''} class="w-full bg-[#2a2a2a] border border-[#444] rounded-lg p-3 text-white focus:border-blue-500 ${f.disabled?'opacity-50 cursor-not-allowed':''}">`;
-            }
-            body.innerHTML += `<div class="text-left"><label class="block text-xs text-gray-400 font-bold mb-1">${f.label}</label>${input}</div>`;
-          });
-
-          const btn = document.getElementById('form-btn-submit'), cancel = document.getElementById('form-btn-cancel');
-          btn.innerText = submitText;
-          const clean = () => { m.classList.add('hidden'); btn.onclick=null; cancel.onclick=null; };
-          btn.onclick = () => { const res = {}; fields.forEach(f => res[f.id] = document.getElementById(f.id).value); clean(); resolve(res); };
-          cancel.onclick = () => { clean(); resolve(null); };
-          m.classList.remove('hidden');
-        });
-      },
-
-      Handlers: {
-        trocarCaminhao: (placa) => Actions.trocarCaminhao(placa),
+        function normalizarTexto(texto) { if (!texto) return ""; return String(texto).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim().replace(/\s+/g, ' '); }
+        function normalizarNumero(valor) { if (!valor) return 0; let n = +parseFloat(String(valor).replace(',', '.')).toFixed(3); return isNaN(n) ? 0 : n; }
         
-        novoCaminhao: async () => App.Handlers._formCaminhao('Cadastrar Caminhão'),
-        editarCaminhao: async (placa) => { const t = DB.caminhoes[placa]; if(t) App.Handlers._formCaminhao('Editar Caminhão', {placa, ...t}, true); },
-        _formCaminhao: async (title, t = {}, isEdit = false) => {
-          const r = await App.showFormModal(title, [
-            { id: 'placa', label: 'Placa (Ex: ABC-1234)', type: 'text', value: t.placa, disabled: false },
-            { id: 'modelo', label: 'Modelo do Veículo', type: 'text', value: t.modelo },
-            { id: 'kmAtual', label: 'KM Atual', type: 'number', value: t.kmAtual || 0 },
-            { id: 'kmUltimaTrocaOleo', label: 'KM da Última Troca de Óleo', type: 'number', value: t.kmUltimaTrocaOleo || '' },
-            { id: 'intervaloOleoKm', label: 'Intervalo da Troca de Óleo (KM)', type: 'number', value: t.intervaloOleoKm || '' },
-            { id: 'status', label: 'Status', type: 'select', options: [{ label: 'Ativo', value: 'Ativo' }, { label: 'Parado', value: 'Parado' }, { label: 'Oficina', value: 'Oficina' }, { label: 'Inativo', value: 'Inativo' }], value: t.status || 'Ativo' },
-            { id: 'observacao', label: 'Observação', type: 'text', value: t.observacao || '' }
-          ]);
-          if(r) { try { await Actions.salvarCaminhao(r, isEdit ? t.placa : null); App.showMessage('Sucesso', 'Caminhão salvo no sistema!', 'check', 'green'); } catch(e) { App.showMessage('Erro', e.message, 'alert-triangle', 'red'); } }
-        },
-        excluirCaminhao: async (placa) => {
-          try { 
-            if(DB.caminhaoAtual === placa) throw new Error("Mude de caminhão no topo da tela antes de excluir este.");
-            if(await App.showConfirmModal('Atenção Operacional', `Deseja realmente excluir o caminhão ${placa}? Ele será removido em todos os dispositivos.`, 'trash-2', 'red')) { await Actions.excluirCaminhao(placa); App.showMessage('Excluído', 'Caminhão removido globalmente.', 'check', 'green'); } 
-          } catch(e) { App.showMessage('Ação Bloqueada', e.message, 'alert-triangle', 'red'); }
-        },
+        function mostrarNotificacao(titulo, mensagem) {
+            let toast = document.getElementById('toastNotificacao');
+            document.getElementById('toastTitulo').innerText = titulo; document.getElementById('toastMsg').innerText = mensagem;
+            toast.classList.remove('translate-x-full', 'opacity-0');
+            setTimeout(() => toast.classList.add('translate-x-full', 'opacity-0'), 5000);
+        }
 
-        novoFrete: async () => App.Handlers._formFrete('Registrar Frete'),
-        editarFrete: async (id) => { const f = DB.fretes.find(x => x.id === id); if(f) App.Handlers._formFrete('Editar Frete', f); },
-        _formFrete: async (title, f = {}) => {
-          // Usando UUIDs reais amarrados ao relacional
-          const cam = Object.values(DB.caminhoes).map(c => ({ label: c.placa, value: c.id }));
-          const mot = DB.motoristas.map(m => ({label: m.nome, value: m.id}));
-          const defaultCamId = DB.caminhoes[DB.caminhaoAtual] ? DB.caminhoes[DB.caminhaoAtual].id : '';
-          
-          const r = await App.showFormModal(title, [
-            { id: 'data', label: 'Data do Lançamento', type: 'date', value: f.data ? f.data.split('T')[0] : Utils.todayISO() },
-            { id: 'cliente', label: 'Cliente', type: 'text', value: f.cliente },
-            { id: 'caminhao', label: 'Caminhão', type: 'select', options: cam, value: f.caminhao || defaultCamId },
-            { id: 'motorista', label: 'Motorista', type: 'select', options: mot, value: f.motorista },
-            { id: 'valorFrete', label: 'Frete (R$)', type: 'number', step: '0.01', value: f.valorFrete },
-            { id: 'valorRecebido', label: 'Já Recebido (R$)', type: 'number', step: '0.01', value: f.valorRecebido },
-            { id: 'valorAReceber', label: 'A Receber (R$)', type: 'number', step: '0.01', value: f.valorAReceber },
-            { id: 'valorMotorista', label: 'Custo Previsto Motorista (R$)', type: 'number', step: '0.01', value: f.valorMotorista },
-            { id: 'dataPrevistaRecebimento', label: 'Data Prevista Recebimento', type: 'date', value: f.dataPrevistaRecebimento ? f.dataPrevistaRecebimento.split('T')[0] : '' },
-            { id: 'observacao', label: 'Obs', type: 'text', value: f.observacao }
-          ]);
-          if(r) {
-            try { 
-              await Actions.salvarFrete({ 
-                ...r, 
-                valorFrete: Utils.parseMoney(r.valorFrete), valorRecebido: Utils.parseMoney(r.valorRecebido), valorAReceber: Utils.parseMoney(r.valorAReceber), valorMotorista: Utils.parseMoney(r.valorMotorista),
-                dataPrevistaRecebimento: r.dataPrevistaRecebimento ? new Date(r.dataPrevistaRecebimento + 'T12:00:00.000Z').toISOString() : '',
-                data: new Date(r.data + 'T12:00:00.000Z').toISOString()
-              }, f.id); 
-              App.showMessage('Sucesso', 'Frete salvo no banco!', 'check-circle', 'green'); 
-            } catch(e) { App.showMessage('Erro', e.message, 'alert-triangle', 'red'); }
-          }
-        },
-        excluirFrete: async (id) => { 
-          try { if(await App.showConfirmModal('Excluir Frete', 'Deseja apagar este frete de todos os dispositivos?', 'trash', 'red')) { await Actions.excluirFrete(id); App.showMessage('Excluído', 'Frete apagado globalmente.', 'check', 'green'); } } 
-          catch(e) { App.showMessage('Ação Bloqueada', e.message, 'alert-triangle', 'red'); }
-        },
-
-        novaDespesa: async () => App.Handlers._formDespesa('Nova Despesa'),
-        editarDespesa: async (id) => { 
-          const d = DB.despesas.find(x => x.id === id); if(!d) return;
-          if (d.origem === 'abastecimento' || d.origem === 'manutencao') { App.showMessage('Ação Bloqueada', 'Esta despesa foi gerada automaticamente. Edite ou exclua pelo módulo de origem.', 'alert-triangle', 'red'); return; }
-          App.Handlers._formDespesa('Editar Despesa', d); 
-        },
-        _formDespesa: async (title, d = {}) => {
-          const cam = Object.values(DB.caminhoes).map(c => ({ label: c.placa, value: c.id }));
-          const mot = [{ label: 'Nenhum', value: '' }, ...DB.motoristas.map(m => ({ label: m.nome, value: m.id }))];
-          const fretesOpts = [{ label: 'Nenhum', value: '' }, ...(DB.fretes || []).map(f => ({ label: `${f.cliente || 'Sem cliente'}`, value: f.id }))];
-          const cat = CONSTANTS.CATEGORIAS_DESPESA.map(c => ({ label: c, value: c }));
-          
-          const r = await App.showFormModal(title, [
-            { id: 'data', label: 'Data', type: 'date', value: d.data ? String(d.data).split('T')[0] : Utils.todayISO() },
-            { id: 'caminhao_id', label: 'Caminhão Ref.', type: 'select', options: cam, value: d.caminhao_id || '' },
-            { id: 'motorista_id', label: 'Motorista Ref.', type: 'select', options: mot, value: d.motorista_id || '' },
-            { id: 'frete_id', label: 'Vincular a Frete (Opcional)', type: 'select', options: fretesOpts, value: d.frete_id || '' },
-            { id: 'categoria', label: 'Categoria', type: 'select', options: cat, value: d.categoria || '' },
-            { id: 'descricao', label: 'Descrição', type: 'text', value: d.descricao || '' },
-            { id: 'valor', label: 'Valor (R$)', type: 'number', step: '0.01', value: d.valor || '' }
-          ]);
-          
-          if (!r) return;
-          
-          try {
-            const payload = {
-              data: r.data,
-              empresa_id: AppState.empresaId,
-              caminhao_id: r.caminhao_id || null,
-              motorista_id: r.motorista_id || null,
-              frete_id: r.frete_id || null,
-              categoria: r.categoria,
-              descricao: r.descricao,
-              valor: Utils.parseMoney(r.valor),
-              origem: d.origem || 'manual'
-            };
+        // --- MOTOR DE LEITURA (IA PONTUAÇÃO) ---
+        function classificarEExtrairDados(rows, idLado) {
+            if (rows.length === 0) return [];
+            let headerRowIndex = -1; let map = { cod: -1, desc: -1, qtd: -1, um: -1 };
             
-            await Actions.salvarDespesa(payload, d.id);
-            App.showMessage('Sucesso', 'Despesa salva.', 'check', 'green'); 
-          } catch(e) { App.showMessage('Erro', e.message, 'alert-triangle', 'red'); }
-        },
-        excluirDespesa: async (id) => { 
-          const d = DB.despesas.find(x => x.id === id); if (!d) return;
-          if (d.origem === 'abastecimento' || d.origem === 'manutencao') { App.showMessage('Ação Bloqueada', 'Esta despesa foi gerada automaticamente. Exclua a origem para removê-la.', 'alert-triangle', 'red'); return; }
-          if(await App.showConfirmModal('Excluir', 'Apagar despesa?', 'trash', 'red')) {
-            try {
-              await Actions.excluirDespesa(id);
-              App.showMessage('Excluído', 'Despesa removida.', 'check', 'green');
-            } catch(e) { App.showMessage('Erro', e.message, 'alert-triangle', 'red'); }
-          }
-        },
+            for (let i = 0; i < Math.min(10, rows.length); i++) {
+                let linha = rows[i]; if (!linha || !Array.isArray(linha)) continue;
+                linha.forEach((val, cIdx) => {
+                    if (!val) return; let v = String(val).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+                    if (v.includes("cod") || v.includes("sku") || v.includes("ref") || v === "id") map.cod = cIdx;
+                    else if (v.includes("desc") || v.includes("prod") || v.includes("nome") || v.includes("mat")) map.desc = cIdx;
+                    else if (v.includes("qtd") || v.includes("quant") || v.includes("saldo") || v.includes("est")) map.qtd = cIdx;
+                    else if (v === "um" || v.includes("unid") || v.includes("medida")) map.um = cIdx;
+                });
+                if (map.desc !== -1 && map.qtd !== -1) { headerRowIndex = i; break; }
+            }
 
-        registrarAbastecimento: async () => {
-          const isMotorista = AppState.perfil === 'motorista';
-          const dados = {
-            data: document.getElementById('abs-data').value ? new Date(document.getElementById('abs-data').value + 'T12:00:00.000Z').toISOString() : new Date().toISOString(),
-            kmBomba: Utils.parseMoney(document.getElementById('abs-km').value),
-            freteId: isMotorista ? '' : document.getElementById('abs-frete').value,
-            motoristaId: isMotorista ? AppState.motoristaId : document.getElementById('abs-motorista').value,
-            litros: Utils.parseMoney(document.getElementById('abs-litros').value),
-            valor: Utils.parseMoney(document.getElementById('abs-valor').value),
-            adiantamento: isMotorista ? 0 : Utils.parseMoney(document.getElementById('abs-pagamento-motorista').value),
-            arlaLitros: Utils.parseMoney(document.getElementById('abs-arla-litros').value),
-            arlaValor: Utils.parseMoney(document.getElementById('abs-arla-valor').value)
-          };
-          try {
-            await Actions.registrarAbastecimento(dados); 
-            App.showMessage('Sucesso', 'Abastecimento salvo no banco!', 'check-circle', 'green');
-            ['abs-km','abs-frete','abs-motorista','abs-litros','abs-valor','abs-pagamento-motorista','abs-arla-litros','abs-arla-valor'].forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.value = '';
+            if (headerRowIndex === -1) {
+                let numCols = rows.reduce((max, r) => Math.max(max, r.length || 0), 0);
+                let pts = Array.from({length: numCols}, (_, c) => ({ col: c, q: 0, d: 0, c: 0 }));
+                for (let i = 0; i < Math.min(30, rows.length); i++) {
+                    rows[i]?.forEach((val, c) => {
+                        let s = String(val).trim(); if (!s) return;
+                        if (!isNaN(s.replace(',', '.'))) {
+                            if (s.includes('.') || s.includes(',')) pts[c].q += 50;
+                            else if (s.startsWith('0') && s.length > 1) pts[c].c += 40;
+                            else pts[c].q += 2;
+                        } else {
+                            if (s.length > 8 && s.includes(' ')) pts[c].d += s.length;
+                            if (s.length > 2 && s.length < 15 && !s.includes(' ')) pts[c].c += 10;
+                        }
+                    });
+                }
+                map.desc = pts.reduce((a, b) => a.d > b.d ? a : b).col;
+                map.qtd = pts.filter(p => p.col !== map.desc).reduce((a, b) => a.q > b.q ? a : b).col;
+                map.cod = pts.filter(p => p.col !== map.desc && p.col !== map.qtd).reduce((a, b) => a.c > b.c ? a : b).col;
+                mostrarNotificacao(`Lado ${idLado}: IA Ativa`, "Padrão de dados identificado sem cabeçalho.");
+            }
+
+            let extraido = [];
+            for (let i = (headerRowIndex + 1); i < rows.length; i++) {
+                let linha = rows[i]; if (!linha || !Array.isArray(linha)) continue;
+                let original = map.desc !== -1 ? linha[map.desc] : "";
+                if (!original || String(original).trim().length < 2) continue; 
+                extraido.push({
+                    codigo: map.cod !== -1 && linha[map.cod] !== undefined ? String(linha[map.cod]).trim() : "-",
+                    descOriginal: String(original).trim(),
+                    um: map.um !== -1 && linha[map.um] ? String(linha[map.um]).trim().toUpperCase() : "UN",
+                    qtdRaw: map.qtd !== -1 ? linha[map.qtd] : 0
+                });
+            }
+            return extraido;
+        }
+
+        function estruturarLado(dadosPadronizados, idLado) {
+            let mapa = {};
+            dadosPadronizados.forEach(item => {
+                let normal = normalizarTexto(item.descOriginal);
+                if (palavrasExcluidasFixas.some(p => normal.includes(p))) return;
+                let finalDesc = aplicarDicionario(normal);
+                if (exclusoes[idLado].includes(finalDesc)) return;
+                if (mapa[finalDesc]) { 
+                    mapa[finalDesc].qtd += normalizarNumero(item.qtdRaw);
+                    if (item.codigo !== "-" && !mapa[finalDesc].codigo.includes(item.codigo)) mapa[finalDesc].codigo += " / " + item.codigo;
+                } else { mapa[finalDesc] = { codigo: item.codigo, descOriginal: item.descOriginal, um: item.um, qtd: normalizarNumero(item.qtdRaw) }; }
             });
-            document.getElementById('abs-data').value = Utils.todayISO();
-          } catch(e) { App.showMessage('Atenção', e.message, 'alert-triangle', 'red'); }
-        },
-        excluirAbastecimento: async (placa, id) => {
-          if (await App.showConfirmModal('Excluir Abastecimento', 'Deseja apagar este abastecimento?', 'trash-2', 'red')) {
-            try {
-              await Actions.excluirAbastecimento(placa, id);
-              App.showMessage('Excluído', 'Registro removido.', 'check', 'green');
-            } catch (e) {
-              App.showMessage('Erro', e.message || 'Erro ao excluir abastecimento.', 'alert-triangle', 'red');
-            }
-          }
-        },
-
-        registrarManutencao: async () => {
-          const truck = Selectors.getTruckAtual();
-          if (!truck || !truck.id) {
-            App.showMessage('Erro', 'Nenhum veículo vinculado ao motorista.', 'alert-triangle', 'red');
-            return;
-          }
-
-          const categorias = [
-            { label: 'Borracheiro', value: 'borracheiro' },
-            { label: 'Pneu', value: 'pneu' },
-            { label: 'Pastilha', value: 'pastilha' },
-            { label: 'Freio', value: 'freio' },
-            { label: 'Mão de obra', value: 'mao_de_obra' },
-            { label: 'Peças', value: 'pecas' },
-            { label: 'Eletricista', value: 'eletricista' },
-            { label: 'Revisão', value: 'revisao' },
-            { label: 'Outros', value: 'outros' }
-          ];
-
-          const r = await App.showFormModal('Nova Manutenção', [
-            { id: 'data', label: 'Data', type: 'date', value: Utils.todayISO() },
-            { id: 'categoria', label: 'Categoria', type: 'select', options: categorias, value: 'outros' },
-            { id: 'descricao', label: 'Descrição', type: 'text', value: '' },
-            { id: 'valor', label: 'Valor (R$)', type: 'number', step: '0.01', value: '' },
-            { id: 'observacao', label: 'Observação', type: 'text', value: '' }
-          ]);
-
-          if (!r) return;
-
-          try {
-            const { error } = await supabaseClient.from('manutencoes').insert([
-              {
-                data: r.data,
-                empresa_id: AppState.empresaId,
-                motorista_id: AppState.motoristaId || null,
-                caminhao_id: truck.id,
-                categoria: r.categoria,
-                descricao: r.descricao,
-                valor: Utils.parseMoney(r.valor),
-                observacao: r.observacao || '',
-                km_atual: truck.kmAtual || 0
-              }
-            ]);
-
-            if (error) throw error;
-
-            App.showMessage('Sucesso', 'Manutenção registrada com sucesso.', 'check-circle', 'green');
-
-            if (typeof carregarManutencoes === 'function') {
-              await carregarManutencoes();
-            }
-          } catch (e) {
-            App.showMessage('Erro', e.message || 'Erro ao salvar manutenção.', 'alert-triangle', 'red');
-          }
-        },
-
-        excluirManutencao: async (id) => {
-          if (await App.showConfirmModal('Excluir Manutenção', 'Deseja apagar esta manutenção?', 'trash-2', 'red')) {
-            try {
-              await Actions.excluirManutencao(id);
-              App.showMessage('Excluído', 'Manutenção removida.', 'check', 'green');
-            } catch (e) {
-              App.showMessage('Erro', e.message || 'Erro ao excluir manutenção.', 'alert-triangle', 'red');
-            }
-          }
-        },
-
-        novoMotorista: async () => App.Handlers._formMot('Novo Motorista'),
-        editarMotorista: async (id) => { const m = DB.motoristas.find(x => x.id === id); if(m) App.Handlers._formMot('Editar Motorista', m); },
-        _formMot: async (title, m = {}) => {
-          const camOpts = [{ label: 'Nenhum', value: '' }, ...Object.values(DB.caminhoes).map(c => ({
-            label: c.placa,
-            value: c.id
-          }))];
-
-          const r = await App.showFormModal(title, [
-            { id: 'nome', label: 'Nome', type: 'text', value: m.nome || '' },
-            { id: 'telefone', label: 'Tel', type: 'text', value: m.telefone || '' },
-            { id: 'documento', label: 'Doc', type: 'text', value: m.documento || '' },
-            { id: 'pix', label: 'Chave PIX / Conta', type: 'text', value: m.pix || '' },
-            { id: 'tipoPagamento', label: 'Contrato', type: 'select', options: [
-              { label: 'Diária', value: 'Diária' },
-              { label: 'Comissão', value: 'Comissão' }
-            ], value: m.tipo_pagamento || m.tipoPagamento || 'Diária' },
-            { id: 'valorPadrao', label: 'Valor Padrão (R$)', type: 'number', step: '0.01', value: m.valor_padrao || m.valorPadrao || 0 },
-            { id: 'status', label: 'Status', type: 'select', options: [
-              { label: 'Ativo', value: 'Ativo' },
-              { label: 'Inativo', value: 'Inativo' }
-            ], value: m.status || 'Ativo' },
-            { id: 'user_id', label: 'ID de acesso (uso interno)', type: 'text', value: m.user_id || '' },
-            { id: 'caminhao_id', label: 'Caminhão Principal', type: 'select', options: camOpts, value: m.caminhao_id || '' }
-          ]);
-
-          if (!r) return;
-
-          try {
-            await App.Handlers.salvarMotoristaCompleto(r, m.id || null);
-            App.showMessage('Sucesso', 'Motorista salvo.', 'check', 'green');
-          } catch (e) {
-            App.showMessage('Erro', e.message || 'Erro ao salvar motorista.', 'alert-triangle', 'red');
-          }
-        },
-
-        salvarMotoristaCompleto: async (dados, motoristaId = null) => {
-          const payloadMotorista = {
-            nome: dados.nome,
-            telefone: dados.telefone || null,
-            documento: dados.documento || null,
-            pix: dados.pix || null,
-            tipo_pagamento: dados.tipoPagamento || null,
-            valor_padrao: Utils.parseMoney(dados.valorPadrao),
-            status: dados.status || 'Ativo',
-            empresa_id: AppState.empresaId,
-            user_id: dados.user_id || null
-          };
-
-          let motoristaSalvo = null;
-
-          if (motoristaId) {
-            const { data, error } = await supabaseClient
-              .from('motoristas')
-              .update(payloadMotorista)
-              .eq('id', motoristaId)
-              .eq('empresa_id', AppState.empresaId)
-              .select()
-              .single();
-
-            if (error) throw error;
-            motoristaSalvo = data;
-          } else {
-            const { data, error } = await supabaseClient
-              .from('motoristas')
-              .insert([payloadMotorista])
-              .select()
-              .single();
-
-            if (error) throw error;
-            motoristaSalvo = data;
-          }
-
-          if (!motoristaSalvo) {
-            throw new Error('Não foi possível salvar o motorista.');
-          }
-
-          if (dados.user_id) {
-            const { data: vinculoExistente, error: erroBuscaVinculo } = await supabaseClient
-              .from('usuarios_empresa')
-              .select('id')
-              .eq('user_id', dados.user_id)
-              .maybeSingle();
-
-            if (erroBuscaVinculo) throw erroBuscaVinculo;
-
-            if (vinculoExistente?.id) {
-              const { error } = await supabaseClient
-                .from('usuarios_empresa')
-                .update({
-                  empresa_id: AppState.empresaId,
-                  nome: dados.nome,
-                  perfil: 'motorista',
-                  ativo: true
-                })
-                .eq('id', vinculoExistente.id);
-
-              if (error) throw error;
-            } else {
-              const { error } = await supabaseClient
-                .from('usuarios_empresa')
-                .insert([{
-                  user_id: dados.user_id,
-                  empresa_id: AppState.empresaId,
-                  nome: dados.nome,
-                  perfil: 'motorista',
-                  ativo: true
-                }]);
-
-              if (error) throw error;
-            }
-          }
-
-          if (dados.caminhao_id) {
-            const { data: vinculoVeiculo, error: erroBuscaVeiculo } = await supabaseClient
-              .from('motoristas_veiculos')
-              .select('id')
-              .eq('motorista_id', motoristaSalvo.id)
-              .eq('tipo_vinculo', 'principal')
-              .maybeSingle();
-
-            if (erroBuscaVeiculo) throw erroBuscaVeiculo;
-
-            if (vinculoVeiculo?.id) {
-              const { error } = await supabaseClient
-                .from('motoristas_veiculos')
-                .update({
-                  caminhao_id: dados.caminhao_id
-                })
-                .eq('id', vinculoVeiculo.id);
-
-              if (error) throw error;
-            } else {
-              const { error } = await supabaseClient
-                .from('motoristas_veiculos')
-                .insert([{
-                  motorista_id: motoristaSalvo.id,
-                  caminhao_id: dados.caminhao_id,
-                  tipo_vinculo: 'principal'
-                }]);
-
-              if (error) throw error;
-            }
-          }
-
-          await carregarMotoristas();
-        },
-
-        excluirMotorista: async (id) => {
-          try { if(await App.showConfirmModal('Excluir Motorista', 'Apagar cadastro globalmente?', 'trash', 'red')) { await Actions.excluirMotorista(id); App.showMessage('Excluído', 'Motorista removido globalmente.', 'check', 'green'); } } 
-          catch(e) { App.showMessage('Ação Bloqueada', e.message, 'alert-triangle', 'red'); }
-        },
-        
-        novoLancamentoMotorista: async () => App.Handlers._formLancamento('Novo Lançamento'),
-        editarLancamentoMotorista: async (id) => { 
-          const l = DB.financeiroMotoristas.find(x => x.id === id); if(!l) return;
-          if (l.origem === 'abastecimento') { App.showMessage('Ação bloqueada', 'Este lançamento foi gerado automaticamente por um abastecimento. Edite na origem.', 'alert-triangle', 'red'); return; }
-          App.Handlers._formLancamento('Editar Lançamento', l); 
-        },
-        _formLancamento: async (title, l = {}) => {
-          const mot = DB.motoristas.map(m => ({label: m.nome, value: m.id}));
-          const tip = CONSTANTS.TIPOS_LANCAMENTO.map(t => ({label: t.toUpperCase(), value: t}));
-          const r = await App.showFormModal(title, [
-            { id: 'data', label: 'Data', type: 'date', value: l.data ? l.data.split('T')[0] : Utils.todayISO() },
-            { id: 'motoristaId', label: 'Motorista', type: 'select', options: mot, value: l.motoristaId },
-            { id: 'tipo', label: 'Tipo', type: 'select', options: tip, value: l.tipo },
-            { id: 'valor', label: 'Valor (R$)', type: 'number', step: '0.01', value: l.valor },
-            { id: 'descricao', label: 'Descrição', type: 'text', value: l.descricao }
-          ]);
-          if(r) {
-            try { Actions.salvarLancamentoMot({ ...r, valor: Utils.parseMoney(r.valor), status: l.status || 'confirmado', data: new Date(r.data + 'T12:00:00.000Z').toISOString() }, l.id); App.showMessage('Sucesso', 'Lançamento efetuado.', 'check', 'green'); } 
-            catch(e) { App.showMessage('Erro', e.message, 'alert-triangle', 'red'); }
-          }
-        },
-        excluirLancamentoMotorista: async (id) => { 
-          const l = DB.financeiroMotoristas.find(x => x.id === id); if(!l) return;
-          if (l.origem === 'abastecimento') { App.showMessage('Ação bloqueada', 'Este lançamento foi gerado automaticamente por um abastecimento.', 'alert-triangle', 'red'); return; }
-          if(await App.showConfirmModal('Excluir', 'Apagar lançamento?', 'trash', 'red')) Actions.excluirLancamentoMot(id); 
-        },
-
-        atualizarKm: async () => {
-          const r = await App.showFormModal('Ajustar KM', [{ id: 'km', label: 'KM Atual', type: 'number', value: Selectors.getTruckAtual().kmAtual }]);
-          if(r && r.km) { 
-            try { Actions.atualizarKmManual(parseInt(r.km)); App.showMessage('Sucesso', 'KM atualizado', 'check', 'green'); }
-            catch(e) { App.showMessage('Ação Bloqueada', e.message, 'alert-triangle', 'red'); }
-          }
-        },
-        resetDemo: async () => { 
-          App.showMessage('Indisponível', 'Função de demo desativada nesta versão.', 'alert-triangle', 'yellow');
-        }
-      },
-      setTab: (tabId) => {
-        document.querySelectorAll('.tab-content, .nav-item').forEach(el => el.classList.remove('active'));
-        if (document.getElementById(`tab-${tabId}`)) document.getElementById(`tab-${tabId}`).classList.add('active');
-        if (document.getElementById(`nav-${tabId}`)) document.getElementById(`nav-${tabId}`).classList.add('active');
-        document.querySelectorAll('.side-nav-item').forEach(el => { el.classList.remove('bg-blue-600/10', 'text-blue-400'); el.classList.add('hover:bg-white/5', 'text-gray-300'); });
-        if (document.getElementById(`side-nav-${tabId}`)) { document.getElementById(`side-nav-${tabId}`).classList.remove('text-gray-300'); document.getElementById(`side-nav-${tabId}`).classList.add('bg-blue-600/10', 'text-blue-400'); }
-        
-        if (tabId === 'oleo') {
-          UI.renderOleo();
+            return mapa;
         }
 
-        const main = document.getElementById('main-container');
-        if (main) main.scrollTop = 0;
-      },
-      showMessage: (title, text, icon, color) => {
-        const cMap = { blue: 'text-blue-500', green: 'text-green-500', red: 'text-red-500', yellow: 'text-yellow-500' };
-        document.getElementById('msg-title').innerText = title; document.getElementById('msg-text').innerText = text;
-        document.getElementById('msg-icon').innerHTML = `<i data-lucide="${icon}" class="${cMap[color]} w-6 h-6"></i>`;
-        lucide.createIcons(); document.getElementById('msg-modal').classList.remove('hidden');
-      }
-    };
+        function iniciarCruzamento() {
+            if (dadosRawA.length === 0 && dadosRawB.length === 0) return;
+            const btn = document.getElementById('btnProcessar'); btn.innerHTML = `Limpando e Cruzando...`; btn.disabled = true;
+            setTimeout(() => {
+                try {
+                    let dictA = estruturarLado(dadosRawA, 'A'); let dictB = estruturarLado(dadosRawB, 'B');
+                    // IA Automática (Ajustada para 88% de rigor)
+                    Object.keys(dictA).forEach(itemA => { Object.keys(dictB).forEach(itemB => { if (!dicionarioMescla[itemA] && !dicionarioMescla[itemB] && calcularSimilaridade(itemA, itemB) >= 0.88) dicionarioMescla[itemA] = itemB; }); });
+                    let todasChaves = new Set([...Object.keys(dictA), ...Object.keys(dictB)]);
+                    let listaFinal = Array.from(todasChaves).sort();
+                    processedData = { dictA, dictB, listaFinal };
+                    renderizarMatriz(listaFinal, dictA, dictB);
+                    document.getElementById('btnIA').classList.remove('hidden');
+                    document.getElementById('btnExportExcel').classList.remove('hidden');
+                } catch (e) { console.error(e); } finally { btn.innerHTML = `Processar Auditoria`; btn.disabled = false; }
+            }, 100);
+        }
 
-    document.addEventListener('DOMContentLoaded', App.init);
-  </script>
+        // --- RENDERIZADOR DINÂMICO COM KPIs DINÂMICOS ---
+        function renderizarMatriz(listaOrdenada, dictA, dictB) {
+            const tbody = document.getElementById('tbodyMatriz'); tbody.innerHTML = '';
+            document.getElementById('areaTabela').classList.remove('hidden');
+            let cTotal = 0, cOk = 0, cDiv = 0, cSoA = 0, cSoB = 0;
+
+            listaOrdenada.forEach((descFinal, idx) => {
+                let iA = dictA[descFinal]; let iB = dictB[descFinal];
+                const search = (iA?.descOriginal || "") + (iB?.descOriginal || "") + (iA?.codigo || "") + (iB?.codigo || "");
+                if (filtroBusca && !search.toUpperCase().includes(filtroBusca.toUpperCase())) return;
+
+                let qA = iA ? iA.qtd : 0; let qB = iB ? iB.qtd : 0;
+                let diff = normalizarNumero(qA - qB);
+                let status = ""; let tp = "all";
+                if (diff === 0) { status = `<span class="badge badge-ok">Bateu</span>`; cOk++; tp = "ok"; }
+                else if (qA === 0) { status = `<span class="badge badge-falta">Só no B</span>`; cSoB++; tp = "sob"; }
+                else if (qB === 0) { status = `<span class="badge badge-sobra">Só no A</span>`; cSoA++; tp = "soa"; }
+                else { status = `<span class="badge badge-sobra">${Math.abs(diff)} no A</span>`; cDiv++; tp = "div"; }
+                cTotal++;
+
+                let tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 dark:hover:bg-slate-800/50 row-item transition-colors";
+                tr.setAttribute('data-status', tp); tr.id = `row-${idx}`;
+                
+                let acA = iA ? `<div class="flex gap-1 justify-center"><button onclick="cliqueBotaoCorrelacionar('${esc(descFinal)}', 'row-${idx}')" class="btn-acao">🔗</button><button onclick="excluirManual('${esc(descFinal)}', 'A')" class="btn-acao">🗑️</button></div>` : '';
+                let acB = iB ? `<div class="flex gap-1 justify-center"><button onclick="cliqueBotaoCorrelacionar('${esc(descFinal)}', 'row-${idx}')" class="btn-acao">🔗</button><button onclick="excluirManual('${esc(descFinal)}', 'B')" class="btn-acao">🗑️</button></div>` : '';
+
+                tr.innerHTML = `<td class="p-3 align-top">${acA}</td><td class="p-3 align-top w-[30%] text-slate-800 dark:text-slate-200">${iA ? `<div class="text-xs text-indigo-600 dark:text-indigo-400 font-bold">Cód: ${iA.codigo}</div><div class="font-medium whitespace-normal break-words">${iA.descOriginal}</div>` : '-'}</td><td class="p-3 text-center align-top text-slate-500 dark:text-slate-400">${iA ? iA.um : '-'}</td><td class="p-3 text-right font-bold border-r border-slate-200 dark:border-slate-800 align-top">${iA ? iA.qtd : '-'}</td><td class="p-3 text-center bg-slate-50 dark:bg-slate-800/30 border-r border-slate-200 dark:border-slate-800 align-top">${status}</td><td class="p-3 align-top">${acB}</td><td class="p-3 align-top w-[30%] text-slate-800 dark:text-slate-200">${iB ? `<div class="text-xs text-indigo-600 dark:text-indigo-400 font-bold">Cód: ${iB.codigo}</div><div class="font-medium whitespace-normal break-words">${iB.descOriginal}</div>` : '-'}</td><td class="p-3 text-center align-top text-slate-500 dark:text-slate-400">${iB ? iB.um : '-'}</td><td class="p-3 text-right font-bold align-top">${iB ? iB.qtd : '-'}</td>`;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('kpiTotal').innerText = cTotal;
+            document.getElementById('kpiOk').innerText = cOk; document.getElementById('kpiDiv').innerText = cDiv;
+            document.getElementById('kpiSoA').innerText = cSoA; document.getElementById('kpiSoB').innerText = cSoB;
+            aplicarFiltro(filtroStatus);
+        }
+
+        // --- FILTROS E BUSCA ---
+        function aplicarFiltro(tipo) {
+            filtroStatus = tipo;
+            document.querySelectorAll('.card-kpi').forEach(c => c.classList.remove('ring-2', 'ring-indigo-500', 'scale-105'));
+            document.getElementById(`card-${tipo}`).classList.add('ring-2', 'ring-indigo-500', 'scale-105');
+            document.querySelectorAll('#tbodyMatriz .row-item').forEach(l => { l.style.display = (tipo === 'all' || l.getAttribute('data-status') === tipo) ? '' : 'none'; });
+        }
+        function debounceBusca() { clearTimeout(window.searchT); window.searchT = setTimeout(() => { filtroBusca = document.getElementById('inputBusca').value; iniciarCruzamento(); }, 300); }
+
+        // --- 🟢 EXPORTAÇÃO ESPELHADA (RESPEITA FILTROS VISÍVEIS) ---
+        function exportarExcelResultado() {
+            let dadosExport = [["STATUS", "COD A", "PRODUTO A", "QTD A", "COD B", "PRODUTO B", "QTD B", "DIFERENÇA"]];
+            const { dictA, dictB, listaFinal } = processedData;
+            listaFinal.forEach(chave => {
+                const iA = dictA[chave]; const iB = dictB[chave];
+                const searchTxt = (iA?.descOriginal || "") + (iB?.descOriginal || "") + (iA?.codigo || "") + (iB?.codigo || "");
+                if (filtroBusca && !searchTxt.toUpperCase().includes(filtroBusca.toUpperCase())) return;
+                
+                const qA = iA ? iA.qtd : 0; const qB = iB ? iB.qtd : 0;
+                const diff = normalizarNumero(qA - qB);
+                let st = "DIVERGENCIA";
+                if (diff === 0) st = "OK (BATEU)"; else if (qA === 0) st = "SO NO B"; else if (qB === 0) st = "SO NO A";
+                
+                // Mapeamento de Status para o Filtro Ativo
+                const stMap = { ok: "OK (BATEU)", div: "DIVERGENCIA", soa: "SO NO A", sob: "SO NO B" };
+                const currentStatusValue = diff === 0 ? "ok" : (qA === 0 ? "sob" : (qB === 0 ? "soa" : "div"));
+                
+                if (filtroStatus !== 'all' && currentStatusValue !== filtroStatus) return;
+
+                dadosExport.push([ st, iA?.codigo || "-", iA?.descOriginal || "-", qA, iB?.codigo || "-", iB?.descOriginal || "-", qB, diff ]);
+            });
+            const ws = XLSX.utils.aoa_to_sheet(dadosExport); const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Resultado Auditoria"); XLSX.writeFile(wb, `Auditoria_Estoque_PRO.xlsx`);
+        }
+
+        // --- GESTÃO DE MEMÓRIA (MODAL CUSTOM) ---
+        function abrirConfirmacaoLimpeza() { document.getElementById('confirmModal').classList.remove('hidden'); }
+        function fecharConfirmacao() { document.getElementById('confirmModal').classList.add('hidden'); }
+        function executarLimpezaTotal() { localStorage.clear(); location.reload(); }
+
+        // --- AÇÕES ---
+        function cliqueBotaoCorrelacionar(p, tr) {
+            if (!produtoAguardandoCorrelacao) {
+                produtoAguardandoCorrelacao = p; idLinhaAguardando = tr; document.getElementById(tr).classList.add('linha-selecionada');
+                document.getElementById('nomeSelecionado').innerText = p;
+                document.getElementById('barraCorrelação').classList.replace('opacity-0', 'opacity-100');
+                document.getElementById('barraCorrelação').classList.replace('-translate-y-24', 'translate-y-0');
+                document.getElementById('barraCorrelação').classList.remove('pointer-events-none');
+            } else {
+                let o = produtoAguardandoCorrelacao; if (o !== p) { dicionarioMescla[o] = p; localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); }
+                cancelarCorrelação(); iniciarCruzamento();
+            }
+        }
+        function cancelarCorrelação() { 
+            if (idLinhaAguardando && document.getElementById(idLinhaAguardando)) document.getElementById(idLinhaAguardando).classList.remove('linha-selecionada');
+            produtoAguardandoCorrelacao = null; document.getElementById('barraCorrelação').classList.replace('opacity-100', 'opacity-0');
+            document.getElementById('barraCorrelação').classList.replace('translate-y-0', '-translate-y-24');
+            document.getElementById('barraCorrelação').classList.add('pointer-events-none');
+        }
+        function excluirManual(p, l) { exclusoes[l].push(p); localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes)); iniciarCruzamento(); }
+
+        // --- CONTROLE UI ---
+        function abrirManual() { document.getElementById('manualModal').classList.remove('hidden'); }
+        function fecharManual() { document.getElementById('manualModal').classList.add('hidden'); }
+        function abrirGerenciador() { document.getElementById('regrasModal').classList.remove('hidden'); renderizarRegrasMescla(); renderizarListaExclusoes(); }
+        function fecharGerenciador() { document.getElementById('regrasModal').classList.add('hidden'); }
+        function mudarAba(aba) { let isM = aba === 'mesclas'; document.getElementById('conteudoMesclas').classList.toggle('hidden', !isM); document.getElementById('conteudoExclusoes').classList.toggle('hidden', isM); }
+        function renderizarRegrasMescla() { let tbody = document.getElementById('tbodyRegras'); tbody.innerHTML = ''; Object.keys(dicionarioMescla).forEach(o => { let tr = document.createElement('tr'); tr.innerHTML = `<td class="p-3 text-xs text-slate-600 dark:text-slate-300">${o} ➔ ${dicionarioMescla[o]}</td><td class="p-3 text-right"><button onclick="removerMescla('${esc(o)}')" class="text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-900/20 px-2 rounded">Desfazer</button></td>`; tbody.appendChild(tr); }); }
+        function renderizarListaExclusoes() { let tbA = document.getElementById('tbodyExcluidosA'); let tbB = document.getElementById('tbodyExcluidosB'); tbA.innerHTML = ''; tbB.innerHTML = ''; exclusoes.A.forEach(item => tbA.innerHTML += `<tr><td class="p-2 text-xs flex justify-between text-slate-600 dark:text-slate-300">${item} <button onclick="restaurarExclusao('${esc(item)}', 'A')" class="text-indigo-500 font-bold">Voltar</button></td></tr>`); exclusoes.B.forEach(item => tbB.innerHTML += `<tr><td class="p-2 text-xs flex justify-between text-slate-600 dark:text-slate-300">${item} <button onclick="restaurarExclusao('${esc(item)}', 'B')" class="text-indigo-500 font-bold">Voltar</button></td></tr>`); }
+        function removerMescla(o) { delete dicionarioMescla[o]; localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); renderizarRegrasMescla(); iniciarCruzamento(); }
+        function restaurarExclusao(i, l) { exclusoes[l] = exclusoes[l].filter(x => x !== i); localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes)); renderizarListaExclusoes(); iniciarCruzamento(); }
+        function exportarBackup() { const blob = new Blob([JSON.stringify({ dicionarioMescla, exclusoes })], { type: "application/json" }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "Backup_Conciliador.json"; a.click(); }
+        function processarImportacaoBackup(e) { const reader = new FileReader(); reader.onload = evt => { const d = JSON.parse(evt.target.result); dicionarioMescla = d.dicionarioMescla; exclusoes = d.exclusoes; localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes)); mostrarNotificacao("Sucesso", "Memória Restaurada!"); location.reload(); }; reader.readAsText(e.target.files[0]); }
+
+        // --- IA LOTE ---
+        function buscarSugestoesIA() {
+            let container = document.getElementById('aiSugestoesLista'); mesclasEmLote = {}; document.getElementById('aiModal').classList.remove('hidden');
+            container.innerHTML = '<p class="p-8 text-center text-indigo-600 font-bold animate-pulse">Analisando similaridades matematicamente...</p>';
+            setTimeout(() => {
+                let dictA = estruturarLado(dadosRawA, 'A'); let dictB = estruturarLado(dadosRawB, 'B');
+                let suggestions = [];
+                Object.keys(dictA).forEach(itemA => { Object.keys(dictB).forEach(itemB => { let sc = calcularSimilaridade(itemA, itemB); if (sc >= 0.60 && sc < 0.88) suggestions.push({ itemA, itemB, sc }); }); });
+                container.innerHTML = suggestions.length ? '' : '<p class="p-8 text-center text-slate-400">Nenhum produto semelhante encontrado.</p>';
+                suggestions.sort((a,b) => b.sc - a.sc).forEach((s, idx) => {
+                    let d = document.createElement('div'); d.className = "bg-slate-50 dark:bg-slate-800 p-4 rounded-xl flex justify-between items-center gap-4 border dark:border-slate-700";
+                    d.innerHTML = `<div class="text-xs"><strong>A:</strong> ${s.itemA}<br><strong>B:</strong> ${s.itemB}<br><span class="text-indigo-500 font-bold">Afinidade: ${Math.round(s.sc*100)}%</span></div><button id="b-at-${idx}" onclick="agendarMesclaLote('${esc(s.itemA)}', '${esc(s.itemB)}', 'b-at-${idx}')" class="bg-white dark:bg-slate-700 border dark:border-slate-600 text-xs px-4 py-2 rounded-lg font-bold shrink-0 transition-colors">Unir</button>`;
+                    container.appendChild(d);
+                });
+            }, 300);
+        }
+        function agendarMesclaLote(a, b, id) { let btn = document.getElementById(id); if (mesclasEmLote[a]) { delete mesclasEmLote[a]; btn.className = "bg-white dark:bg-slate-700 border dark:border-slate-600 text-xs px-4 py-2 rounded-lg font-bold shrink-0"; btn.innerText="Unir"; } else { mesclasEmLote[a] = b; btn.className = "bg-emerald-600 text-white text-xs px-4 py-2 rounded-lg font-bold shrink-0"; btn.innerText="Selecionado"; } }
+        function aplicarMesclasEmLote() { Object.assign(dicionarioMescla, mesclasEmLote); localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); document.getElementById('aiModal').classList.add('hidden'); iniciarCruzamento(); }
+        function fecharModalIA() { document.getElementById('aiModal').classList.add('hidden'); }
+
+        // --- 🟢 LEITURA COM TRATAMENTO DE ERRO (TRY/CATCH) ---
+        function lerArquivoExcel(file, idLado) { 
+            const loader = document.getElementById('loading' + idLado); loader.classList.remove('hidden');
+            const r = new FileReader(); 
+            r.onload = function(e) { 
+                try {
+                    const w = XLSX.read(new Uint8Array(e.target.result), {type: 'array'}); 
+                    const rows = XLSX.utils.sheet_to_json(w.Sheets[w.SheetNames[0]], {header: 1, defval: ""});
+                    let pad = classificarEExtrairDados(rows, idLado);
+                    if (idLado === 'A') dadosRawA = pad; else dadosRawB = pad;
+                    mostrarNotificacao("Ficheiro Lido", `${pad.length} linhas carregadas.`);
+                } catch (err) {
+                    mostrarNotificacao("Erro Crítico", "Arquivo inválido ou corrompido.");
+                    console.error(err);
+                } finally {
+                    loader.classList.add('hidden');
+                }
+            }; 
+            r.onerror = () => { loader.classList.add('hidden'); mostrarNotificacao("Erro", "Falha ao ler o arquivo."); };
+            r.readAsArrayBuffer(file); 
+        }
+        document.getElementById('fileA').addEventListener('change', e => lerArquivoExcel(e.target.files[0], 'A'));
+        document.getElementById('fileB').addEventListener('change', e => lerArquivoExcel(e.target.files[0], 'B'));
+    </script>
 </body>
 </html>
