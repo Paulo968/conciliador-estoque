@@ -967,8 +967,54 @@
                 tr.className = "hover:bg-slate-50 dark:hover:bg-slate-800/50 row-item transition-colors";
                 tr.setAttribute('data-status', tp); tr.id = `row-${idx}`;
                 
-                let acA = iA ? `<div class="flex gap-1 justify-center"><button onclick="cliqueBotaoCorrelacionar('${esc(descFinal)}', 'row-${idx}')" class="btn-acao w-7 h-7 md:w-9 md:h-9 text-[10px] md:text-sm">🔗</button><button onclick="excluirManual('${esc(descFinal)}', 'A')" class="btn-acao w-7 h-7 md:w-9 md:h-9 text-[10px] md:text-sm text-rose-500">🗑️</button></div>` : '';
-                let acB = iB ? `<div class="flex gap-1 justify-center"><button onclick="cliqueBotaoCorrelacionar('${esc(descFinal)}', 'row-${idx}')" class="btn-acao w-7 h-7 md:w-9 md:h-9 text-[10px] md:text-sm">🔗</button><button onclick="excluirManual('${esc(descFinal)}', 'B')" class="btn-acao w-7 h-7 md:w-9 md:h-9 text-[10px] md:text-sm text-rose-500">🗑️</button></div>` : '';
+                const temMescla = dicionarioMescla[descFinal] || Object.values(dicionarioMescla).includes(descFinal);
+
+                let btnDesfazer = temMescla
+                    ? `<button
+                            onclick="removerMescla('${esc(descFinal)}')"
+                            class="btn-acao w-7 h-7 md:w-9 md:h-9 text-[10px] md:text-sm text-amber-500"
+                            title="Desfazer união e bloquear IA">
+                            ↩️
+                       </button>`
+                    : '';
+
+                let acA = iA ? `
+                    <div class="flex gap-1 justify-center">
+                        <button
+                            onclick="cliqueBotaoCorrelacionar('${esc(descFinal)}', 'row-${idx}')"
+                            class="btn-acao w-7 h-7 md:w-9 md:h-9 text-[10px] md:text-sm"
+                            title="Unir produto">
+                            🔗
+                        </button>
+
+                        ${btnDesfazer}
+
+                        <button
+                            onclick="excluirManual('${esc(descFinal)}', 'A')"
+                            class="btn-acao w-7 h-7 md:w-9 md:h-9 text-[10px] md:text-sm text-rose-500"
+                            title="Excluir do Lado A">
+                            🗑️
+                        </button>
+                    </div>` : '';
+
+                let acB = iB ? `
+                    <div class="flex gap-1 justify-center">
+                        <button
+                            onclick="cliqueBotaoCorrelacionar('${esc(descFinal)}', 'row-${idx}')"
+                            class="btn-acao w-7 h-7 md:w-9 md:h-9 text-[10px] md:text-sm"
+                            title="Unir produto">
+                            🔗
+                        </button>
+
+                        ${btnDesfazer}
+
+                        <button
+                            onclick="excluirManual('${esc(descFinal)}', 'B')"
+                            class="btn-acao w-7 h-7 md:w-9 md:h-9 text-[10px] md:text-sm text-rose-500"
+                            title="Excluir do Lado B">
+                            🗑️
+                        </button>
+                    </div>` : '';
 
                 tr.innerHTML = `
                     <td class="p-1 md:p-3 align-middle">${acA}</td>
@@ -1156,16 +1202,23 @@
         }
         function renderizarListaExclusoes() { let tbA = document.getElementById('tbodyExcluidosA'); let tbB = document.getElementById('tbodyExcluidosB'); tbA.innerHTML = ''; tbB.innerHTML = ''; exclusoes.A.forEach(item => tbA.innerHTML += `<tr><td class="p-3 text-xs flex justify-between font-bold dark:text-slate-300">${item} <button onclick="restaurarExclusao('${esc(item)}', 'A')" class="text-indigo-500 font-black transition-colors">VOLTAR</button></td></tr>`); exclusoes.B.forEach(item => tbB.innerHTML += `<tr><td class="p-3 text-xs flex justify-between font-bold dark:text-slate-300">${item} <button onclick="restaurarExclusao('${esc(item)}', 'B')" class="text-indigo-500 font-black transition-colors">VOLTAR</button></td></tr>`); }
         function removerMescla(o) {
-            const destino = dicionarioMescla[o];
+            let origemReal = o;
 
-            if (!destino) {
+            // Se o item clicado for o destino/canônico, encontra uma origem que aponta para ele
+            if (!dicionarioMescla[origemReal]) {
+                origemReal = Object.keys(dicionarioMescla).find(chave => dicionarioMescla[chave] === o);
+            }
+
+            const destino = dicionarioMescla[origemReal];
+
+            if (!origemReal || !destino) {
                 mostrarNotificacao('Aviso', 'Essa união não existe mais na memória.');
                 renderizarRegrasMescla();
                 iniciarCruzamento();
                 return;
             }
 
-            const grupo = obterGrupoMescla(o);
+            const grupo = obterGrupoMescla(origemReal);
 
             // Ensina a IA que todos os itens desse grupo não devem ser unidos automaticamente de novo
             for (let i = 0; i < grupo.length; i++) {
