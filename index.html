@@ -51,6 +51,9 @@
         .dark .btn-acao { border-color: #334155; color: #94a3b8; }
         .btn-acao:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         
+        .linha-selecionada { background-color: #e0e7ff !important; border: 2px solid #6366f1 !important; box-shadow: 0 0 15px rgba(99, 102, 241, 0.3) !important; transition: all 0.3s ease; }
+        .dark .linha-selecionada { background-color: #312e81 !important; border-color: #818cf8 !important; }
+        
         .card-kpi { cursor: pointer; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 2px solid transparent; }
         .card-kpi:hover { transform: translateY(-4px); border-color: #cbd5e1; }
         .card-kpi.active { transform: scale(1.05); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); border-color: #6366f1; }
@@ -211,28 +214,50 @@
                 <button onclick="fecharManual()" class="text-slate-400 hover:text-slate-600 bg-slate-50 dark:bg-slate-800 p-3 rounded-2xl transition-colors">✕</button>
             </div>
             <div class="overflow-y-auto flex-1 pr-4 space-y-12 text-slate-700 dark:text-slate-300 leading-relaxed scrollbar-hide font-medium">
-                
+
                 <section>
-                    <p class="text-lg leading-relaxed">O <strong>Conciliador PRO</strong> foi desenvolvido para cruzar listas de estoque de origens diferentes, mesmo quando os nomes e os códigos dos produtos não são idênticos. O sistema utiliza heurística de linguagem para limpar, agrupar e calcular divergências de forma inteligente.</p>
+                    <p class="text-lg leading-relaxed">
+                        O <strong>Conciliador PRO</strong> foi desenvolvido para comparar duas listas de estoque, mesmo quando os produtos aparecem com nomes, códigos ou formatos diferentes.
+                        O sistema limpa os dados, identifica padrões, cruza os saldos e usa uma memória inteligente para melhorar os próximos processamentos.
+                    </p>
                 </section>
 
                 <section class="bg-slate-50 dark:bg-slate-800/50 p-6 md:p-8 rounded-[2rem] border border-slate-100 dark:border-slate-700">
                     <h4 class="text-xl font-bold text-slate-900 dark:text-white mb-6 underline decoration-indigo-500 underline-offset-8">
                         Como Utilizar o Sistema
                     </h4>
+
                     <div class="space-y-6">
                         <div class="flex gap-4">
                             <div class="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center shrink-0">1</div>
                             <div>
-                                <p class="text-sm font-bold text-slate-900 dark:text-white mb-1">Importação de Arquivos</p>
-                                <p class="text-sm">Clique nos campos tracejados (Lado A e Lado B) para inserir seus arquivos. O sistema aceita formatos nativos de exportação (<strong>.xlsx, .xls ou .csv</strong>). A IA detectará automaticamente onde estão as colunas de Descrição, Quantidade e Código.</p>
+                                <p class="text-sm font-bold text-slate-900 dark:text-white mb-1">Importar os Arquivos</p>
+                                <p class="text-sm">
+                                    Selecione o arquivo do <strong>Estoque Lado A</strong> e o arquivo do <strong>Estoque Lado B</strong>.
+                                    O sistema aceita arquivos <strong>.xlsx, .xls e .csv</strong>. Ele tenta identificar automaticamente as colunas de descrição, quantidade, código e unidade de medida.
+                                </p>
                             </div>
                         </div>
+
                         <div class="flex gap-4">
                             <div class="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center shrink-0">2</div>
                             <div>
-                                <p class="text-sm font-bold text-slate-900 dark:text-white mb-1">Processamento e Filtragem</p>
-                                <p class="text-sm">Após inserir ambos os arquivos, clique em <strong>"Processar Auditoria"</strong>. O sistema removerá espaços inúteis, acentuações e cruzará as linhas correspondentes. Utilize os <strong>Cards no topo da tela</strong> para filtrar rapidamente por divergências ou sobras.</p>
+                                <p class="text-sm font-bold text-slate-900 dark:text-white mb-1">Processar a Auditoria</p>
+                                <p class="text-sm">
+                                    Depois de carregar os dois arquivos, clique em <strong>Processar Auditoria</strong>.
+                                    O sistema irá normalizar os nomes, somar itens repetidos, aplicar regras salvas na memória e comparar as quantidades entre os dois lados.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-4">
+                            <div class="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center shrink-0">3</div>
+                            <div>
+                                <p class="text-sm font-bold text-slate-900 dark:text-white mb-1">Analisar os Resultados</p>
+                                <p class="text-sm">
+                                    Use os cards de resumo para filtrar os resultados por <strong>Geral</strong>, <strong>Bateu</strong>, <strong>Divergente</strong>,
+                                    <strong>Ambas Sobras</strong>, <strong>Só A</strong> e <strong>Só B</strong>. Também é possível pesquisar por nome ou código no campo de busca.
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -240,32 +265,124 @@
 
                 <section>
                     <h4 class="text-xl font-bold text-slate-900 dark:text-white mb-6">Ações Manuais e Memória 🛠️</h4>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="p-6 border border-slate-100 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900 shadow-sm">
-                            <p class="font-black text-indigo-600 mb-2 uppercase text-xs flex items-center gap-2"><span class="text-lg">🔗</span> Unir Produtos</p>
-                            <p class="text-sm">Se o sistema não juntou dois produtos automaticamente, <strong>clique no ícone de corrente (🔗)</strong> ao lado do Produto A, e em seguida, clique no ícone do Produto B correspondente. A IA unirá os saldos e gravará essa regra para as próximas planilhas.</p>
+                            <p class="font-black text-indigo-600 mb-2 uppercase text-xs flex items-center gap-2">
+                                <span class="text-lg">🔗</span> Unir Produtos
+                            </p>
+                            <p class="text-sm">
+                                Use o botão de corrente <strong>🔗</strong> quando dois produtos forem o mesmo item, mas estiverem com nomes diferentes.
+                                Clique primeiro no produto de um lado e depois no produto correspondente do outro lado.
+                                Essa união será salva na memória para os próximos processamentos.
+                            </p>
                         </div>
+
                         <div class="p-6 border border-slate-100 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900 shadow-sm">
-                            <p class="font-black text-rose-600 mb-2 uppercase text-xs flex items-center gap-2"><span class="text-lg">🗑️</span> Excluir / Ocultar</p>
-                            <p class="text-sm">Caso um produto não deva constar na auditoria, <strong>clique no ícone de lixeira (🗑️)</strong>. Esta exclusão é independente: apagar do Lado A não apaga o Produto do Lado B. Ele apenas deixará de ser correlacionado.</p>
+                            <p class="font-black text-red-600 mb-2 uppercase text-xs flex items-center gap-2">
+                                <span class="text-lg">↩️</span> Desfazer União
+                            </p>
+                            <p class="text-sm">
+                                Se a IA ou o usuário uniu dois produtos incorretamente, abra o botão <strong>Memória</strong>, vá em <strong>Uniões Ativas</strong>
+                                e clique em <strong>Desfazer e Bloquear IA</strong>.
+                                O sistema remove a união e grava esse par como rejeitado, impedindo que a IA tente unir novamente.
+                            </p>
+                        </div>
+
+                        <div class="p-6 border border-slate-100 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900 shadow-sm">
+                            <p class="font-black text-rose-600 mb-2 uppercase text-xs flex items-center gap-2">
+                                <span class="text-lg">🗑️</span> Excluir / Ocultar
+                            </p>
+                            <p class="text-sm">
+                                Use a lixeira <strong>🗑️</strong> quando um produto não deve entrar na auditoria.
+                                A exclusão é feita por lado: excluir do <strong>Lado A</strong> não remove automaticamente do <strong>Lado B</strong>.
+                            </p>
+                        </div>
+
+                        <div class="p-6 border border-slate-100 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900 shadow-sm">
+                            <p class="font-black text-emerald-600 mb-2 uppercase text-xs flex items-center gap-2">
+                                <span class="text-lg">🧠</span> Memória Inteligente
+                            </p>
+                            <p class="text-sm">
+                                A memória guarda uniões, exclusões e rejeições da IA.
+                                Isso permite que o sistema melhore com o uso e respeite correções feitas manualmente.
+                            </p>
                         </div>
                     </div>
                 </section>
 
-                <section class="p-6 bg-emerald-50 dark:bg-emerald-900/20 rounded-3xl border border-emerald-100 dark:border-emerald-800 mb-6 mt-6">
-                    <h4 class="text-lg font-bold text-slate-900 dark:text-white mb-3">Feedback de Processamento & Sugestões de IA</h4>
-                    <p class="text-sm mb-4">Sempre que você clica em <strong>"Processar Auditoria"</strong>, um relatório em tempo real exibe os dados lidos, a velocidade do motor e as economias de trabalho geradas pela IA naquele segundo.</p>
-                    <p class="text-sm">Ao abrir as <strong>"Sugestões Inteligentes"</strong>, a IA lista produtos com similaridade entre 60% e 88%. Se a IA sugerir uma união incorreta, clique no <strong>botão (✕)</strong>. A IA gravará isso no cérebro dela e <strong>nunca mais sugerirá</strong> aquele par específico, aprendendo de forma contínua com a sua operação!</p>
+                <section class="p-6 bg-amber-50 dark:bg-amber-900/20 rounded-3xl border border-amber-100 dark:border-amber-800">
+                    <h4 class="text-lg font-bold text-slate-900 dark:text-white mb-3">Sugestões Inteligentes da IA</h4>
+
+                    <p class="text-sm mb-4">
+                        Após processar a auditoria, o botão <strong>Sugestões Inteligentes</strong> pode exibir possíveis uniões entre produtos parecidos.
+                        Essas sugestões devem ser revisadas antes de aplicar.
+                    </p>
+
+                    <p class="text-sm mb-4">
+                        Se uma sugestão estiver correta, selecione e aplique a união.
+                        Se estiver errada, clique no botão de rejeição <strong>✕</strong>.
+                        Quando uma sugestão é rejeitada, a IA aprende e deixa de sugerir aquele cruzamento novamente.
+                    </p>
+
+                    <p class="text-sm">
+                        Regra prática: a IA ajuda, mas a decisão final é do usuário.
+                        Em caso de dúvida, confira descrição, código, unidade e quantidade antes de confirmar uma união.
+                    </p>
+                </section>
+
+                <section class="p-6 bg-red-50 dark:bg-red-900/20 rounded-3xl border border-red-100 dark:border-red-800">
+                    <h4 class="text-lg font-bold text-slate-900 dark:text-white mb-3">Quando Usar "Desfazer e Bloquear IA"</h4>
+
+                    <p class="text-sm mb-4">
+                        Use essa opção quando dois produtos foram unidos por engano.
+                        Ao desfazer, o sistema não apenas separa os itens, mas também registra que aquela combinação não deve ser repetida automaticamente.
+                    </p>
+
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-red-100 dark:border-red-900/30 text-sm">
+                        <p class="font-black text-red-600 mb-2 uppercase text-xs">Exemplo:</p>
+                        <p>
+                            Se a IA uniu <strong>ÓLEO 1LT</strong> com <strong>ÓLEO 5LT</strong> por engano, clique em
+                            <strong>Memória → Uniões Ativas → Desfazer e Bloquear IA</strong>.
+                            Depois disso, essa união não deve voltar no próximo processamento.
+                        </p>
+                    </div>
                 </section>
 
                 <section class="p-6 bg-indigo-50 dark:bg-indigo-900/20 rounded-3xl border border-indigo-100 dark:border-indigo-800">
-                    <h4 class="text-lg font-bold text-slate-900 dark:text-white mb-3">Gestão de Memória e Exportação</h4>
-                    <p class="text-sm mb-4">Todas as suas exclusões (🗑️) e uniões manuais (🔗) ficam salvas localmente. Para visualizar, desfazer regras ou exportar essas regras para outro computador, clique no botão <strong>"Memória de Regras"</strong> no cabeçalho superior.</p>
-                    <p class="text-sm">Quando finalizar a auditoria, clique em <strong>"Baixar Excel"</strong> para exportar o resultado final consolidado para envio à gerência.</p>
+                    <h4 class="text-lg font-bold text-slate-900 dark:text-white mb-3">Backup, Importação e Exportação</h4>
+
+                    <p class="text-sm mb-4">
+                        No botão <strong>Memória</strong>, é possível exportar um arquivo <strong>.JSON</strong> com as regras salvas do sistema.
+                        Esse backup inclui uniões, exclusões, rejeições da IA, famílias aprendidas, versão do backup e data de geração.
+                    </p>
+
+                    <p class="text-sm mb-4">
+                        Use <strong>Exportar .JSON</strong> para guardar a inteligência construída durante as auditorias.
+                        Use <strong>Importar .JSON</strong> para restaurar essa memória em outro navegador ou computador.
+                    </p>
+
+                    <p class="text-sm">
+                        Quando finalizar a auditoria, clique em <strong>Baixar Excel (.xlsx)</strong> para exportar o resultado final consolidado.
+                    </p>
+                </section>
+
+                <section class="p-6 bg-emerald-50 dark:bg-emerald-900/20 rounded-3xl border border-emerald-100 dark:border-emerald-800 mb-6">
+                    <h4 class="text-lg font-bold text-slate-900 dark:text-white mb-3">Boas Práticas</h4>
+
+                    <ul class="text-sm space-y-3 list-disc pl-5">
+                        <li>Revise as uniões automáticas antes de confiar 100% no resultado.</li>
+                        <li>Use a busca para localizar produtos específicos rapidamente.</li>
+                        <li>Quando a IA errar, não apenas desfaça: use <strong>Desfazer e Bloquear IA</strong>.</li>
+                        <li>Exporte o backup da memória periodicamente.</li>
+                        <li>Antes de enviar o Excel final, confira principalmente os itens divergentes e as sobras.</li>
+                    </ul>
                 </section>
 
             </div>
-            <button onclick="fecharManual()" class="mt-10 bg-indigo-600 text-white py-5 rounded-3xl font-black shadow-2xl hover:bg-indigo-700 transition-colors uppercase tracking-widest transform active:scale-95">Compreendido, Vamos Auditar!</button>
+            <button onclick="fecharManual()" class="mt-10 bg-indigo-600 text-white py-5 rounded-3xl font-black shadow-2xl hover:bg-indigo-700 transition-colors uppercase tracking-widest transform active:scale-95">
+    Entendi, Vamos Auditar!
+</button>
         </div>
     </div>
 
@@ -335,7 +452,8 @@
     <script>
         // --- ESTADO GLOBAL ---
         let processedData = { dictA: {}, dictB: {}, listaFinal: [] };
-        let dadosRawA = []; let dadosRawB = [];
+        let dadosRawA = JSON.parse(localStorage.getItem('dadosRawAV1') || '[]'); // Persistência de dados RAW
+        let dadosRawB = JSON.parse(localStorage.getItem('dadosRawBV1') || '[]'); // Persistência de dados RAW
         let dicionarioMescla = JSON.parse(localStorage.getItem('dicMesclaV6')) || {};
         let exclusoes = JSON.parse(localStorage.getItem('exclusoesV6') || '{"A":[],"B":[]}');
         let rejeicoesIA = JSON.parse(localStorage.getItem('rejeicoesIAV1') || '[]'); // NOVO: Memória de aprendizado negativo da IA
@@ -415,7 +533,10 @@
         function extrairNumeros(nome) { return (nome.match(/\d+(?:[.,/]\d+)?/g) || []).join('|'); }
         function extrairFamilia(nome) {
             let limpo = nome;
-            limpo = limpo.replace(/\b\d+(?:[.,/]\d+)?\s*(LT|ML|KG|GR|UN|CX|PC|MT|SC|BD|GL|PCT|KT|PR|FD|TN|BAG|GD|FR|PT|BB|IBC|BS|DS|BO)\b/gi, '');
+            // Remove APENAS os números, mantendo a unidade de medida
+            // Isso preserva "OLEO LT" vs "OLEO LT" (mesma família) 
+            // mas diferencia "OLEO 1LT" vs "OLEO 5LT" (variantes diferentes)
+            limpo = limpo.replace(/\b(\d+(?:[.,/]\d+)?)\s*(LT|ML|KG|GR|UN|CX|PC|MT|SC|BD|GL|PCT|KT|PR|FD|TN|BAG|GD|FR|PT|BB|IBC|BS|DS|BO)\b/gi, '$2');
             limpo = limpo.replace(/\b(LTS?|KGS?|UNS?)\b/gi, '');
             return limpo.replace(/\s+/g, ' ').trim() || 'SEM_FAMILIA';
         }
@@ -428,7 +549,10 @@
             if (emComum.length > 0 && exclusivosA.length > 0 && exclusivosB.length > 0) {
                 let isTypo = false;
                 for(let exA of exclusivosA) { for(let exB of exclusivosB) { if(levenshtein(exA, exB) >= 0.75) isTypo = true; } }
-                if(!isTypo) return true; 
+                // CORREÇÃO: Se é typo (palavras parecidas) → mesma família, SEM conflito (return false)
+                // Se NÃO é typo (palavras diferentes, ex: "1LT" vs "5LT") → é conflito de variante (return true)
+                if(isTypo) return false; 
+                return true;
             }
             return false;
         }
@@ -495,8 +619,9 @@
             
             let taxaPalavrasEmComum = calcularIntersecaoPalavras(nuc1, nuc2);
             let penalidadeSemantica = 1.0;
-            if (taxaPalavrasEmComum === 0) { penalidadeSemantica = 0.0; } 
-            else if (taxaPalavrasEmComum < 0.4) { penalidadeSemantica = 0.5; }
+            // Penalidade suave: só zera se NENHUMA palavra em comum, e 20% redução se poucas palavras
+            if (taxaPalavrasEmComum === 0) { penalidadeSemantica = 0.1; } 
+            else if (taxaPalavrasEmComum < 0.3) { penalidadeSemantica = 0.8; }
             
             return notaBase * penalidadeNumerica * penalidadeSemantica; 
         }
@@ -504,22 +629,55 @@
         function aprenderPadroes(dictA, dictB) {
             let familias = JSON.parse(localStorage.getItem('familiasV1') || '{}');
             let novosMatches = 0;
+
             Object.keys(dictA).forEach(nomeA => {
-                let familiaA = extrairFamilia(nomeA); let numsA = extrairNumeros(nomeA);
+                let familiaA = extrairFamilia(nomeA);
+                let numsA = extrairNumeros(nomeA);
+
                 Object.keys(dictB).forEach(nomeB => {
-                    let familiaB = extrairFamilia(nomeB); let numsB = extrairNumeros(nomeB);
-                    if (familiaA === familiaB && familiaA !== 'SEM_FAMILIA' && numsA === numsB && !detectarConflitoDeVarianteGenerico(familiaA, familiaB)) {
+                    let familiaB = extrairFamilia(nomeB);
+                    let numsB = extrairNumeros(nomeB);
+
+                    const hashAB = criarHashRejeicao(nomeA, nomeB);
+                    const hashBA = criarHashRejeicao(nomeB, nomeA);
+
+                    // Se o usuário já desfez/rejeitou esse par, a IA não pode aprender de novo
+                    if (
+                        rejeicoesIA.includes(hashAB) ||
+                        rejeicoesIA.includes(hashBA)
+                    ) {
+                        return;
+                    }
+
+                    if (
+                        familiaA === familiaB &&
+                        familiaA !== 'SEM_FAMILIA' &&
+                        numsA === numsB &&
+                        !detectarConflitoDeVarianteGenerico(familiaA, familiaB)
+                    ) {
                         if (!familias[familiaA]) familias[familiaA] = [];
-                        if (!familias[familiaA].includes(nomeA)) familias[familiaA].push(nomeA);
-                        if (!familias[familiaA].includes(nomeB)) familias[familiaA].push(nomeB);
-                        if (!dicionarioMescla[nomeA]) { dicionarioMescla[nomeA] = nomeB; novosMatches++; }
+
+                        if (!familias[familiaA].includes(nomeA)) {
+                            familias[familiaA].push(nomeA);
+                        }
+
+                        if (!familias[familiaA].includes(nomeB)) {
+                            familias[familiaA].push(nomeB);
+                        }
+
+                        if (!dicionarioMescla[nomeA] && !dicionarioMescla[nomeB]) {
+                            dicionarioMescla[nomeA] = nomeB;
+                            novosMatches++;
+                        }
                     }
                 });
             });
+
             if (novosMatches > 0) {
                 localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla));
                 localStorage.setItem('familiasV1', JSON.stringify(familias));
             }
+
             return novosMatches;
         }
 
@@ -537,10 +695,53 @@
         
         function normalizarNumero(valor) {
             if (!valor) return 0;
-            let s = String(valor).replace(/\s/g, ''); s = s.replace(/\./g, '').replace(',', '.');
-            let n = parseFloat(s); return isNaN(n) ? 0 : Math.round(n * 1000) / 1000;
+            let s = String(valor).trim();
+            // Se tem vírgula como decimal (formato BR): "32,57" ou "1.000,50"
+            if (s.includes(',')) {
+                s = s.replace(/\./g, '');  // remove separador de milhar
+                s = s.replace(',', '.');    // vírgula vira ponto decimal
+            }
+            // Se não tem vírgula, o ponto já é decimal (formato US/Excel): "32.57"
+            // Ou é inteiro: "1000"
+            let n = parseFloat(s);
+            return isNaN(n) ? 0 : Math.round(n * 1000) / 1000;
         }
         function esc(str) { return str ? String(str).replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;") : ""; }
+
+        function criarHashRejeicao(a, b) {
+            return JSON.stringify([a, b]);
+        }
+
+        function salvarRejeicaoIA(a, b) {
+            if (!a || !b || a === b) return;
+
+            const hash1 = criarHashRejeicao(a, b);
+            const hash2 = criarHashRejeicao(b, a);
+
+            if (!rejeicoesIA.includes(hash1)) rejeicoesIA.push(hash1);
+            if (!rejeicoesIA.includes(hash2)) rejeicoesIA.push(hash2);
+
+            localStorage.setItem('rejeicoesIAV1', JSON.stringify(rejeicoesIA));
+        }
+
+        function obterGrupoMescla(origem) {
+            const destino = dicionarioMescla[origem];
+            if (!destino) return [origem];
+
+            const grupo = new Set([origem, destino]);
+
+            Object.keys(dicionarioMescla).forEach(chave => {
+                const valor = dicionarioMescla[chave];
+
+                if (valor === destino || chave === destino || valor === origem) {
+                    grupo.add(chave);
+                    grupo.add(valor);
+                }
+            });
+
+            return Array.from(grupo).filter(Boolean);
+        }
+
         function mostrarNotificacao(titulo, mensagem) {
             let toast = document.getElementById('toastNotificacao');
             document.getElementById('toastTitulo').innerText = titulo; document.getElementById('toastMsg').innerText = mensagem;
@@ -631,17 +832,54 @@
                     
                     statsProcesso.novasUnioes += aprenderPadroes(dictTempA, dictTempB);
 
+                    // INDEXAÇÃO POR FAMÍLIA para otimizar O(n²) → só compara itens da mesma família
+                    let familiasA = {}; let familiasB = {};
                     Object.keys(dictTempA).forEach(itemA => {
-                        Object.keys(dictTempB).forEach(itemB => {
-                            let hashRejeicao = itemA + '::' + itemB;
-                            if (!dicionarioMescla[itemA] && !dicionarioMescla[itemB] && !rejeicoesIA.includes(hashRejeicao)) {
-                                let sc = calcularSimilaridade(itemA, itemB);
-                                if (sc >= 0.88) {
-                                    const canon = itemA < itemB ? itemA : itemB;
-                                    dicionarioMescla[itemA] = canon; dicionarioMescla[itemB] = canon;
-                                    statsProcesso.novasUnioes++;
+                        let famA = extrairFamilia(itemA);
+                        if (!familiasA[famA]) familiasA[famA] = [];
+                        familiasA[famA].push(itemA);
+                    });
+                    Object.keys(dictTempB).forEach(itemB => {
+                        let famB = extrairFamilia(itemB);
+                        if (!familiasB[famB]) familiasB[famB] = [];
+                        familiasB[famB].push(itemB);
+                    });
+
+                    // Só compara itens que compartilham a mesma família
+                    Object.keys(familiasA).forEach(fam => {
+                        let listaA = familiasA[fam];
+                        let listaB = familiasB[fam];
+                        if (!listaB) return; // Sem correspondência nesta família no lado B
+                        
+                        listaA.forEach(itemA => {
+                            listaB.forEach(itemB => {
+                                let hashRejeicaoAB = criarHashRejeicao(itemA, itemB);
+                                let hashRejeicaoBA = criarHashRejeicao(itemB, itemA);
+
+                                if (
+                                    !dicionarioMescla[itemA] &&
+                                    !dicionarioMescla[itemB] &&
+                                    !rejeicoesIA.includes(hashRejeicaoAB) &&
+                                    !rejeicoesIA.includes(hashRejeicaoBA)
+                                ) {
+                                    let sc = calcularSimilaridade(itemA, itemB);
+                                    let qtdA = dictTempA[itemA].qtd;
+                                    let qtdB = dictTempB[itemB].qtd;
+                                    
+                                    // REGRA DE OURO: nome parecido (>65%) + quantidade EXATA = match automático
+                                    if (sc >= 0.65 && sc < 0.88 && Math.abs(qtdA - qtdB) < 0.001) {
+                                        const canon = itemA < itemB ? itemA : itemB;
+                                        dicionarioMescla[itemA] = canon; dicionarioMescla[itemB] = canon;
+                                        statsProcesso.novasUnioes++;
+                                    }
+                                    // Threshold original continua funcionando
+                                    else if (sc >= 0.88) {
+                                        const canon = itemA < itemB ? itemA : itemB;
+                                        dicionarioMescla[itemA] = canon; dicionarioMescla[itemB] = canon;
+                                        statsProcesso.novasUnioes++;
+                                    }
                                 }
-                            }
+                            });
                         });
                     });
                     
@@ -666,7 +904,19 @@
                         mostrarFeedbackModal(statsProcesso, listaFinal.length, (endT - startT));
                     }
 
-                } catch (e) { console.error(e); } finally { btn.innerHTML = `Processar Auditoria`; btn.disabled = false; }
+                } catch (e) { 
+                    console.error(e); 
+                    mostrarNotificacao('Erro no Processamento', e.message || 'Ocorreu um erro inesperado. Verifique o console.');
+                    // Mostrar erro no modal de feedback
+                    document.getElementById('fbTotalLidos').innerText = 'Erro';
+                    document.getElementById('fbItensFinais').innerText = '0';
+                    document.getElementById('fbMemoria').innerText = '0';
+                    document.getElementById('fbTempo').innerText = '0s';
+                    let modal = document.getElementById('feedbackModal');
+                    modal.classList.remove('hidden');
+                    document.querySelector('#feedbackModalContent h3').innerText = 'Erro na Auditoria';
+                    document.querySelector('#feedbackModalContent p').innerText = 'Ocorreu um erro: ' + (e.message || 'desconhecido');
+                } finally { btn.innerHTML = `Processar Auditoria`; btn.disabled = false; }
             }, 100);
         }
 
@@ -792,9 +1042,26 @@
         function mudarAba(aba) { let isM = aba === 'mesclas'; document.getElementById('conteudoMesclas').classList.toggle('hidden', !isM); document.getElementById('conteudoExclusoes').classList.toggle('hidden', isM); }
         function abrirConfirmacaoLimpeza() { document.getElementById('confirmModal').classList.remove('hidden'); }
         function fecharConfirmacao() { document.getElementById('confirmModal').classList.add('hidden'); }
-        function executarLimpezaTotal() { localStorage.clear(); location.reload(); }
+        function executarLimpezaTotal() { 
+            localStorage.removeItem('dadosRawAV1'); 
+            localStorage.removeItem('dadosRawBV1');
+            localStorage.removeItem('dicMesclaV6');
+            localStorage.removeItem('exclusoesV6');
+            localStorage.removeItem('rejeicoesIAV1');
+            localStorage.removeItem('familiasV1');
+            dadosRawA = []; dadosRawB = [];
+            location.reload(); 
+        }
 
         function lerArquivoExcel(file, idLado) { 
+            // Validação: verifica se é o mesmo arquivo do outro lado
+            const outroLado = idLado === 'A' ? 'B' : 'A';
+            const inputOutro = document.getElementById('file' + outroLado);
+            if (inputOutro.files[0] && inputOutro.files[0].name === file.name && inputOutro.files[0].size === file.size) {
+                mostrarNotificacao("Aviso", "Este arquivo ja foi carregado no Lado " + outroLado + ". Use arquivos diferentes.");
+                return;
+            }
+            
             const loader = document.getElementById('loading' + idLado); loader.classList.remove('hidden');
             const r = new FileReader(); 
             r.onload = function(e) { 
@@ -802,7 +1069,13 @@
                     const w = XLSX.read(new Uint8Array(e.target.result), {type: 'array'}); 
                     const rows = XLSX.utils.sheet_to_json(w.Sheets[w.SheetNames[0]], {header: 1, defval: ""});
                     let pad = classificarEExtrairDados(rows, idLado);
-                    if (idLado === 'A') dadosRawA = pad; else dadosRawB = pad;
+                    if (idLado === 'A') { 
+                        dadosRawA = pad; 
+                        localStorage.setItem('dadosRawAV1', JSON.stringify(dadosRawA));
+                    } else { 
+                        dadosRawB = pad; 
+                        localStorage.setItem('dadosRawBV1', JSON.stringify(dadosRawB));
+                    }
                     mostrarNotificacao("Sucesso", "Ficheiro lido: " + pad.length + " itens.");
                 } catch (err) { mostrarNotificacao("Erro", "Ficheiro corrompido ou formato inválido."); }
                 finally { loader.classList.add('hidden'); }
@@ -813,23 +1086,163 @@
 
         function cliqueBotaoCorrelacionar(p, tr) {
             if (!produtoAguardandoCorrelacao) {
-                produtoAguardandoCorrelacao = p; idLinhaAguardando = tr; document.getElementById(tr).classList.add('linha-selecionada');
+                produtoAguardandoCorrelacao = p;
+                idLinhaAguardando = tr;
+
+                document.getElementById(tr).classList.add('linha-selecionada');
                 document.getElementById('nomeSelecionado').innerText = p;
                 document.getElementById('barraCorrelação').classList.replace('opacity-0', 'opacity-100');
                 document.getElementById('barraCorrelação').classList.replace('-translate-y-32', 'translate-y-0');
             } else {
-                let o = produtoAguardandoCorrelacao; if (o !== p) { dicionarioMescla[o] = p; localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); }
-                cancelarCorrelacao(); iniciarCruzamento();
+                let o = produtoAguardandoCorrelacao;
+
+                if (o !== p) {
+                    dicionarioMescla[o] = p;
+
+                    // Se o usuário uniu manualmente, remove possível bloqueio anterior desse par
+                    const hashAB = criarHashRejeicao(o, p);
+                    const hashBA = criarHashRejeicao(p, o);
+                    rejeicoesIA = rejeicoesIA.filter(h => h !== hashAB && h !== hashBA);
+
+                    localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla));
+                    localStorage.setItem('rejeicoesIAV1', JSON.stringify(rejeicoesIA));
+
+                    mostrarNotificacao('🔗 União criada', 'Regra manual salva na memória.');
+                }
+
+                cancelarCorrelacao();
+                iniciarCruzamento();
             }
         }
         function cancelarCorrelacao() { if (idLinhaAguardando && document.getElementById(idLinhaAguardando)) document.getElementById(idLinhaAguardando).classList.remove('linha-selecionada'); produtoAguardandoCorrelacao = null; document.getElementById('barraCorrelação').classList.replace('opacity-100', 'opacity-0'); document.getElementById('barraCorrelação').classList.replace('translate-y-0', '-translate-y-32'); }
         function excluirManual(p, l) { if (!exclusoes[l].includes(p)) { exclusoes[l].push(p); localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes)); } iniciarCruzamento(); }
-        function renderizarRegrasMescla() { let tbody = document.getElementById('tbodyRegras'); tbody.innerHTML = ''; Object.keys(dicionarioMescla).forEach(o => { let tr = document.createElement('tr'); tr.innerHTML = `<td class="p-3 text-xs font-bold text-slate-600 dark:text-slate-300">${o} ➔ ${dicionarioMescla[o]}</td><td class="p-3 text-right"><button onclick="removerMescla('${esc(o)}')" class="text-red-500 font-black uppercase text-[10px] transition-colors">Desfazer</button></td>`; tbody.appendChild(tr); }); }
+        function renderizarRegrasMescla() {
+            let tbody = document.getElementById('tbodyRegras');
+            tbody.innerHTML = '';
+
+            const chaves = Object.keys(dicionarioMescla);
+
+            if (chaves.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td class="p-6 text-center text-xs font-black text-slate-400 uppercase tracking-widest">
+                            Nenhuma união ativa no momento.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            chaves.forEach(o => {
+                let tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-3 text-xs font-bold text-slate-600 dark:text-slate-300">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-slate-400 uppercase text-[9px] tracking-widest">Origem</span>
+                            <span>${o}</span>
+                            <span class="text-indigo-500 font-black">➔ ${dicionarioMescla[o]}</span>
+                        </div>
+                    </td>
+                    <td class="p-3 text-right align-middle">
+                        <button
+                            onclick="removerMescla('${esc(o)}')"
+                            class="text-red-500 hover:text-red-700 font-black uppercase text-[10px] transition-colors bg-red-50 dark:bg-red-900/20 px-4 py-2 rounded-xl border border-red-100 dark:border-red-900/30">
+                            Desfazer e Bloquear IA
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
         function renderizarListaExclusoes() { let tbA = document.getElementById('tbodyExcluidosA'); let tbB = document.getElementById('tbodyExcluidosB'); tbA.innerHTML = ''; tbB.innerHTML = ''; exclusoes.A.forEach(item => tbA.innerHTML += `<tr><td class="p-3 text-xs flex justify-between font-bold dark:text-slate-300">${item} <button onclick="restaurarExclusao('${esc(item)}', 'A')" class="text-indigo-500 font-black transition-colors">VOLTAR</button></td></tr>`); exclusoes.B.forEach(item => tbB.innerHTML += `<tr><td class="p-3 text-xs flex justify-between font-bold dark:text-slate-300">${item} <button onclick="restaurarExclusao('${esc(item)}', 'B')" class="text-indigo-500 font-black transition-colors">VOLTAR</button></td></tr>`); }
-        function removerMescla(o) { delete dicionarioMescla[o]; localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); renderizarRegrasMescla(); iniciarCruzamento(); }
+        function removerMescla(o) {
+            const destino = dicionarioMescla[o];
+
+            if (!destino) {
+                mostrarNotificacao('Aviso', 'Essa união não existe mais na memória.');
+                renderizarRegrasMescla();
+                iniciarCruzamento();
+                return;
+            }
+
+            const grupo = obterGrupoMescla(o);
+
+            // Ensina a IA que todos os itens desse grupo não devem ser unidos automaticamente de novo
+            for (let i = 0; i < grupo.length; i++) {
+                for (let j = i + 1; j < grupo.length; j++) {
+                    salvarRejeicaoIA(grupo[i], grupo[j]);
+                }
+            }
+
+            // Remove todas as entradas que fazem parte desse grupo
+            Object.keys(dicionarioMescla).forEach(chave => {
+                const valor = dicionarioMescla[chave];
+
+                if (grupo.includes(chave) || grupo.includes(valor)) {
+                    delete dicionarioMescla[chave];
+                }
+            });
+
+            localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla));
+
+            renderizarRegrasMescla();
+            iniciarCruzamento();
+
+            mostrarNotificacao(
+                '↩️ União desfeita',
+                'A união foi removida e a IA aprendeu a não repetir esse cruzamento.'
+            );
+        }
         function restaurarExclusao(i, l) { exclusoes[l] = exclusoes[l].filter(x => x !== i); localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes)); renderizarListaExclusoes(); iniciarCruzamento(); }
-        function exportarBackup() { const blob = new Blob([JSON.stringify({ dicionarioMescla, exclusoes, rejeicoesIA })], { type: "application/json" }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "Inteligencia_Auditoria.json"; a.click(); }
-        function processarImportacaoBackup(e) { const reader = new FileReader(); reader.onload = evt => { const d = JSON.parse(evt.target.result); dicionarioMescla = d.dicionarioMescla || {}; exclusoes = d.exclusoes || {"A":[],"B":[]}; rejeicoesIA = d.rejeicoesIA || []; localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes)); localStorage.setItem('rejeicoesIAV1', JSON.stringify(rejeicoesIA)); location.reload(); }; reader.readAsText(e.target.files[0]); }
+        function exportarBackup() {
+            const backup = {
+                versao: "10.1-patch-desfazer-uniao",
+                geradoEm: new Date().toISOString(),
+                dicionarioMescla,
+                exclusoes,
+                rejeicoesIA,
+                familias: JSON.parse(localStorage.getItem('familiasV1') || '{}')
+            };
+
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = "Inteligencia_Auditoria_PRO_Backup.json";
+            a.click();
+        }
+        function processarImportacaoBackup(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+
+            reader.onload = evt => {
+                try {
+                    const d = JSON.parse(evt.target.result);
+
+                    dicionarioMescla = d.dicionarioMescla || {};
+                    exclusoes = d.exclusoes || {"A":[],"B":[]};
+                    rejeicoesIA = d.rejeicoesIA || [];
+
+                    localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla));
+                    localStorage.setItem('exclusoesV6', JSON.stringify(exclusoes));
+                    localStorage.setItem('rejeicoesIAV1', JSON.stringify(rejeicoesIA));
+
+                    if (d.familias) {
+                        localStorage.setItem('familiasV1', JSON.stringify(d.familias));
+                    }
+
+                    mostrarNotificacao('Backup importado', 'Memória restaurada com sucesso.');
+                    setTimeout(() => location.reload(), 800);
+
+                } catch (erro) {
+                    console.error(erro);
+                    mostrarNotificacao('Erro no backup', 'Arquivo inválido ou corrompido.');
+                }
+            };
+
+            reader.readAsText(file);
+        }
 
         function buscarSugestoesIA() {
             let container = document.getElementById('aiSugestoesLista'); mesclasEmLote = {}; document.getElementById('aiModal').classList.remove('hidden');
@@ -840,8 +1253,14 @@
                 Object.keys(dictA).forEach(itemA => { 
                     Object.keys(dictB).forEach(itemB => { 
                         if (extrairFamilia(itemA) === extrairFamilia(itemB)) return;
-                        let hashRejeicao = itemA + '::' + itemB;
-                        if (rejeicoesIA.includes(hashRejeicao)) return; // IA pula se já foi ensinada a não sugerir
+
+                        let hashRejeicaoAB = criarHashRejeicao(itemA, itemB);
+                        let hashRejeicaoBA = criarHashRejeicao(itemB, itemA);
+
+                        if (
+                            rejeicoesIA.includes(hashRejeicaoAB) ||
+                            rejeicoesIA.includes(hashRejeicaoBA)
+                        ) return;
                         
                         let sc = calcularSimilaridade(itemA, itemB); 
                         if (sc >= 0.60 && sc < 0.88) suggestions.push({ itemA, itemB, sc }); 
@@ -867,11 +1286,8 @@
         }
 
         function rejeitarSugestaoIA(a, b, cardId) {
-            let hashRejeicao = a + '::' + b;
-            if (!rejeicoesIA.includes(hashRejeicao)) {
-                rejeicoesIA.push(hashRejeicao);
-                localStorage.setItem('rejeicoesIAV1', JSON.stringify(rejeicoesIA));
-            }
+            salvarRejeicaoIA(a, b);
+
             if (mesclasEmLote[a]) delete mesclasEmLote[a];
             
             let card = document.getElementById(cardId);
@@ -880,12 +1296,60 @@
                 card.style.transform = 'scale(0.95)';
                 setTimeout(() => card.remove(), 300);
             }
-            mostrarNotificacao('🧠 IA Treinada', 'Sugestão bloqueada! O sistema nunca mais vai sugerir este cruzamento.');
+
+            mostrarNotificacao(
+                '🧠 IA Treinada',
+                'Sugestão bloqueada nos dois sentidos. A IA não vai insistir nesse cruzamento.'
+            );
         }
 
         function agendarMesclaLote(a, b, id) { let btn = document.getElementById(id); if (mesclasEmLote[a]) { delete mesclasEmLote[a]; btn.className = "bg-white dark:bg-slate-700 border dark:border-slate-600 px-6 h-10 rounded-2xl font-black text-[10px] shrink-0 transition-colors uppercase flex items-center justify-center"; btn.innerText="Unir"; } else { mesclasEmLote[a] = b; btn.className = "bg-emerald-600 text-white px-6 h-10 rounded-2xl font-black text-[10px] shrink-0 shadow-lg transition-colors uppercase flex items-center justify-center"; btn.innerText="Selecionado"; } }
-        function aplicarMesclasEmLote() { Object.assign(dicionarioMescla, mesclasEmLote); localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla)); document.getElementById('aiModal').classList.add('hidden'); iniciarCruzamento(); }
+        function aplicarMesclasEmLote() {
+            const total = Object.keys(mesclasEmLote).length;
+
+            if (total === 0) {
+                mostrarNotificacao('Aviso', 'Nenhuma sugestão selecionada para unir.');
+                return;
+            }
+
+            Object.keys(mesclasEmLote).forEach(a => {
+                const b = mesclasEmLote[a];
+
+                dicionarioMescla[a] = b;
+
+                // Se antes esse par estava rejeitado, remove a rejeição,
+                // porque o usuário confirmou manualmente que quer unir.
+                const hashAB = criarHashRejeicao(a, b);
+                const hashBA = criarHashRejeicao(b, a);
+
+                rejeicoesIA = rejeicoesIA.filter(h => h !== hashAB && h !== hashBA);
+            });
+
+            localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla));
+            localStorage.setItem('rejeicoesIAV1', JSON.stringify(rejeicoesIA));
+
+            mesclasEmLote = {};
+
+            fecharModalIA();
+            iniciarCruzamento();
+
+            mostrarNotificacao(
+                'Uniões aplicadas',
+                `${total} união(ões) foram aplicadas com sucesso.`
+            );
+        }
         function fecharModalIA() { document.getElementById('aiModal').classList.add('hidden'); }
+
+        // Notificar dados carregados da persistência
+        if (dadosRawA.length > 0 || dadosRawB.length > 0) {
+            setTimeout(() => {
+                let msg = "";
+                if (dadosRawA.length > 0 && dadosRawB.length > 0) msg = dadosRawA.length + " (A) + " + dadosRawB.length + " (B) itens carregados da memoria.";
+                else if (dadosRawA.length > 0) msg = dadosRawA.length + " itens do Lado A carregados da memoria.";
+                else if (dadosRawB.length > 0) msg = dadosRawB.length + " itens do Lado B carregados da memoria.";
+                mostrarNotificacao("Dados Recuperados", msg + " Clique em Processar Auditoria.");
+            }, 500);
+        }
     </script>
 </body>
 </html>
