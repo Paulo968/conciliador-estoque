@@ -457,7 +457,10 @@
         let dicionarioMescla = JSON.parse(localStorage.getItem('dicMesclaV6')) || {};
         let exclusoes = JSON.parse(localStorage.getItem('exclusoesV6') || '{"A":[],"B":[]}');
         let rejeicoesIA = JSON.parse(localStorage.getItem('rejeicoesIAV1') || '[]'); // NOVO: Memória de aprendizado negativo da IA
-        const palavrasExcluidasFixas = ["BICO", "FILTRO"]; 
+        /* EXCLUSÃO AUTOMÁTICA DESATIVADA - Agora exclusão é apenas manual via botão 🗑️
+   const palavrasExcluidasFixas = ["BICO", "FILTRO"];
+*/
+const palavrasExcluidasFixas = []; // vazio = nenhuma exclusão automática 
         let produtoAguardandoCorrelacao = null; let idLinhaAguardando = null; 
         let filtroStatus = 'all'; let filtroBusca = '';
         let mesclasEmLote = {};
@@ -806,7 +809,8 @@
             let mapa = {};
             dadosPadronizados.forEach(item => {
                 let normal = normalizarTexto(item.descOriginal);
-                if (palavrasExcluidasFixas.some(p => normal.includes(p))) { if(stats) stats.excluidos++; return; }
+                // EXCLUSÃO AUTOMÁTICA DESATIVADA - exclusão agora é apenas manual
+                // if (palavrasExcluidasFixas.some(p => normal.includes(p))) { if(stats) stats.excluidos++; return; }
                 let finalDesc = aplicarDicionario(normal, stats);
                 if (exclusoes[idLado].includes(finalDesc)) { if(stats) stats.excluidos++; return; }
                 if (mapa[finalDesc]) { 
