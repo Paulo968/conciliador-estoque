@@ -200,6 +200,9 @@
                     <tbody id="tbodyMatriz" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
                 </table>
             </div>
+            <div id="btnCarregarMaisContainer" class="hidden text-center py-6">
+                <button onclick="carregarMaisItens()" class="px-8 py-3 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-700 text-white font-black rounded-xl text-sm shadow-md transition-all uppercase tracking-wider">Carregar mais itens</button>
+            </div>
         </div>
     </div>
 
@@ -452,8 +455,8 @@
     <script>
         // --- ESTADO GLOBAL ---
         let processedData = { dictA: {}, dictB: {}, listaFinal: [] };
-        let dadosRawA = JSON.parse(localStorage.getItem('dadosRawAV1') || '[]'); // Persistência de dados RAW
-        let dadosRawB = JSON.parse(localStorage.getItem('dadosRawBV1') || '[]'); // Persistência de dados RAW
+        let dadosRawA = []; // Alterado para memória para evitar QuotaExceededError (Limite 5MB)
+        let dadosRawB = []; // Alterado para memória para evitar QuotaExceededError (Limite 5MB)
         let dicionarioMescla = JSON.parse(localStorage.getItem('dicMesclaV6')) || {};
         let exclusoes = JSON.parse(localStorage.getItem('exclusoesV6') || '{"A":[],"B":[]}');
         let rejeicoesIA = JSON.parse(localStorage.getItem('rejeicoesIAV1') || '[]'); // NOVO: Memória de aprendizado negativo da IA
@@ -464,6 +467,9 @@ const palavrasExcluidasFixas = []; // vazio = nenhuma exclusão automática
         let produtoAguardandoCorrelacao = null; let idLinhaAguardando = null; 
         let filtroStatus = 'all'; let filtroBusca = '';
         let mesclasEmLote = {};
+        let paginaAtual = 1;
+        const limiteExibicao = 200;
+        let dadosFiltradosMatriz = [];
 
         // 🟢 DICIONÁRIO GENÉRICO DE RUÍDO (Stopwords Comerciais)
         const stopwordsLogistica = [
@@ -697,19 +703,51 @@ const palavrasExcluidasFixas = []; // vazio = nenhuma exclusão automática
         }
         
         function normalizarNumero(valor) {
-            if (!valor) return 0;
-            let s = String(valor).trim();
-            // Se tem vírgula como decimal (formato BR): "32,57" ou "1.000,50"
-            if (s.includes(',')) {
-                s = s.replace(/\./g, '');  // remove separador de milhar
-                s = s.replace(',', '.');    // vírgula vira ponto decimal
+            if (valor === undefined || valor === null || valor === "") return 0;
+            if (typeof valor === 'number') {
+                return isNaN(valor) ? 0 : Math.round(valor * 1000) / 1000;
             }
-            // Se não tem vírgula, o ponto já é decimal (formato US/Excel): "32.57"
-            // Ou é inteiro: "1000"
+            let s = String(valor).trim();
+            if (!s) return 0;
+            
+            const countDots = (s.match(/\./g) || []).length;
+            const countCommas = (s.match(/,/g) || []).length;
+            
+            // 1. Limpeza de múltiplos separadores de milhar
+            if (countCommas > 1) {
+                s = s.replace(/,/g, '');
+            }
+            if (countDots > 1) {
+                s = s.replace(/\./g, '');
+            }
+            
+            const ultimaVirgula = s.lastIndexOf(',');
+            const ultimoPonto = s.lastIndexOf('.');
+            
+            // 2. Identificação do separador decimal residual
+            if (ultimaVirgula !== -1 && ultimoPonto !== -1) {
+                if (ultimoPonto > ultimaVirgula) {
+                    s = s.replace(/,/g, '');
+                } else {
+                    s = s.replace(/\./g, '').replace(',', '.');
+                }
+            } else if (ultimaVirgula !== -1) {
+                s = s.replace(',', '.');
+            }
+            
             let n = parseFloat(s);
             return isNaN(n) ? 0 : Math.round(n * 1000) / 1000;
         }
-        function esc(str) { return str ? String(str).replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;") : ""; }
+        function escapeHTML(str) {
+            if (str === undefined || str === null) return "";
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+        function esc(str) { return str ? String(str).replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : ""; }
 
         function criarHashRejeicao(a, b) {
             return JSON.stringify([a, b]);
@@ -949,27 +987,72 @@ const palavrasExcluidasFixas = []; // vazio = nenhuma exclusão automática
         }
 
         function renderizarMatriz(listaOrdenada, dictA, dictB) {
-            const tbody = document.getElementById('tbodyMatriz'); tbody.innerHTML = '';
+            const tbody = document.getElementById('tbodyMatriz');
+            tbody.innerHTML = '';
             document.getElementById('areaTabela').classList.remove('hidden');
+            
             let cTotal = 0, cOk = 0, cDiv = 0, cSoA = 0, cSoB = 0;
+            dadosFiltradosMatriz = [];
 
-            listaOrdenada.forEach((descFinal, idx) => {
-                let iA = dictA[descFinal]; let iB = dictB[descFinal];
+            listaOrdenada.forEach((descFinal) => {
+                let iA = dictA[descFinal];
+                let iB = dictB[descFinal];
+                let qA = iA ? iA.qtd : 0;
+                let qB = iB ? iB.qtd : 0;
+                let diff = normalizarNumero(qA - qB);
+                
+                let tp = "all";
+                if (diff === 0) { cOk++; tp = "ok"; }
+                else if (qA === 0) { cSoB++; tp = "sob"; }
+                else if (qB === 0) { cSoA++; tp = "soa"; }
+                else { cDiv++; tp = "div"; }
+                cTotal++;
+
                 const searchTxt = (iA?.descOriginal || "") + (iB?.descOriginal || "") + (iA?.codigo || "") + (iB?.codigo || "");
                 if (filtroBusca && !searchTxt.toUpperCase().includes(filtroBusca.toUpperCase())) return;
 
-                let qA = iA ? iA.qtd : 0; let qB = iB ? iB.qtd : 0;
-                let diff = normalizarNumero(qA - qB);
-                let stIcon = ""; let tp = "all";
-                if (diff === 0) { stIcon = `<span class="badge badge-ok scale-90 md:scale-100 origin-center">Bateu</span>`; cOk++; tp = "ok"; }
-                else if (qA === 0) { stIcon = `<span class="badge badge-falta scale-90 md:scale-100 origin-center">Só no B</span>`; cSoB++; tp = "sob"; }
-                else if (qB === 0) { stIcon = `<span class="badge badge-sobra scale-90 md:scale-100 origin-center">Só no A</span>`; cSoA++; tp = "soa"; }
-                else { stIcon = `<span class="badge badge-sobra scale-90 md:scale-100 origin-center">${Math.abs(diff)} Diferença</span>`; cDiv++; tp = "div"; }
-                cTotal++;
+                const matchFiltro = (filtroStatus === 'all') || (tp === filtroStatus) || (filtroStatus === 'sobras' && (tp === 'soa' || tp === 'sob'));
+                if (matchFiltro) {
+                    dadosFiltradosMatriz.push({ descFinal, iA, iB, qA, qB, diff, tp });
+                }
+            });
+
+            document.getElementById('kpiTotal').innerText = cTotal;
+            document.getElementById('kpiOk').innerText = cOk;
+            document.getElementById('kpiDiv').innerText = cDiv;
+            document.getElementById('kpiSobras').innerText = cSoA + cSoB;
+            document.getElementById('kpiSoA').innerText = cSoA;
+            document.getElementById('kpiSoB').innerText = cSoB;
+
+            // Renderiza primeira página
+            renderizarPaginaMatriz(0, Math.min(dadosFiltradosMatriz.length, paginaAtual * limiteExibicao));
+            
+            // Gerencia botão de carregar mais
+            const btnContainer = document.getElementById('btnCarregarMaisContainer');
+            if (dadosFiltradosMatriz.length > paginaAtual * limiteExibicao) {
+                btnContainer.classList.remove('hidden');
+            } else {
+                btnContainer.classList.add('hidden');
+            }
+        }
+
+        function renderizarPaginaMatriz(inicio, fim) {
+            const tbody = document.getElementById('tbodyMatriz');
+            
+            for (let idx = inicio; idx < fim; idx++) {
+                const item = dadosFiltradosMatriz[idx];
+                const { descFinal, iA, iB, qA, qB, diff, tp } = item;
+                
+                let stIcon = "";
+                if (diff === 0) { stIcon = `<span class="badge badge-ok scale-90 md:scale-100 origin-center">Bateu</span>`; }
+                else if (qA === 0) { stIcon = `<span class="badge badge-falta scale-90 md:scale-100 origin-center">Só no B</span>`; }
+                else if (qB === 0) { stIcon = `<span class="badge badge-sobra scale-90 md:scale-100 origin-center">Só no A</span>`; }
+                else { stIcon = `<span class="badge badge-sobra scale-90 md:scale-100 origin-center">${Math.abs(diff)} Diferença</span>`; }
 
                 let tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 dark:hover:bg-slate-800/50 row-item transition-colors";
-                tr.setAttribute('data-status', tp); tr.id = `row-${idx}`;
+                tr.setAttribute('data-status', tp);
+                tr.id = `row-${idx}`;
                 
                 const temMescla = dicionarioMescla[descFinal] || Object.values(dicionarioMescla).includes(descFinal);
 
@@ -1024,48 +1107,52 @@ const palavrasExcluidasFixas = []; // vazio = nenhuma exclusão automática
                     <td class="p-1 md:p-3 align-middle">${acA}</td>
                     <td class="p-1 md:p-3 align-middle">
                         <div class="flex flex-wrap items-center gap-1 mb-0.5 md:mb-1">
-                            <span class="text-[8px] md:text-[9px] text-indigo-600 dark:text-indigo-400 font-black px-1 md:px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 rounded border border-indigo-100 dark:border-indigo-800/50">${iA ? iA.codigo : '-'}</span>
-                            <span class="text-[8px] md:text-[9px] text-slate-500 font-bold">${iA ? iA.um : '-'}</span>
+                            <span class="text-[8px] md:text-[9px] text-indigo-600 dark:text-indigo-400 font-black px-1 md:px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 rounded border border-indigo-100 dark:border-indigo-800/50">${iA ? escapeHTML(iA.codigo) : '-'}</span>
+                            <span class="text-[8px] md:text-[9px] text-slate-500 font-bold">${iA ? escapeHTML(iA.um) : '-'}</span>
                         </div>
-                        <div class="font-bold text-[10px] md:text-sm text-slate-800 dark:text-slate-200 leading-tight line-clamp-2 md:line-clamp-none md:truncate min-w-[120px] max-w-[150px] md:min-w-[220px] md:max-w-[280px]" title="${iA ? iA.descOriginal : '-'}">${iA ? iA.descOriginal : '-'}</div>
+                        <div class="font-bold text-[10px] md:text-sm text-slate-800 dark:text-slate-200 leading-tight line-clamp-2 md:line-clamp-none md:truncate min-w-[120px] max-w-[150px] md:min-w-[220px] md:max-w-[280px]" title="${iA ? escapeHTML(iA.descOriginal) : '-'}">${iA ? escapeHTML(iA.descOriginal) : '-'}</div>
                     </td>
                     <td class="p-1 md:p-3 text-center align-middle font-black text-[11px] md:text-base border-r border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20">${iA ? iA.qtd : '-'}</td>
                     <td class="p-1 md:p-3 text-center align-middle bg-slate-50/80 dark:bg-slate-800/40 border-r border-slate-100 dark:border-slate-800 shadow-[inset_0_0_10px_rgba(0,0,0,0.02)]">${stIcon}</td>
                     <td class="p-1 md:p-3 text-center align-middle font-black text-[11px] md:text-base bg-slate-50/30 dark:bg-slate-800/20">${iB ? iB.qtd : '-'}</td>
                     <td class="p-1 md:p-3 align-middle">
                         <div class="flex flex-wrap items-center gap-1 mb-0.5 md:mb-1">
-                            <span class="text-[8px] md:text-[9px] text-blue-600 dark:text-blue-400 font-black px-1 md:px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/30 rounded border border-blue-100 dark:border-blue-800/50">${iB ? iB.codigo : '-'}</span>
-                            <span class="text-[8px] md:text-[9px] text-slate-500 font-bold">${iB ? iB.um : '-'}</span>
+                            <span class="text-[8px] md:text-[9px] text-blue-600 dark:text-blue-400 font-black px-1 md:px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/30 rounded border border-blue-100 dark:border-blue-800/50">${iB ? escapeHTML(iB.codigo) : '-'}</span>
+                            <span class="text-[8px] md:text-[9px] text-slate-500 font-bold">${iB ? escapeHTML(iB.um) : '-'}</span>
                         </div>
-                        <div class="font-bold text-[10px] md:text-sm text-slate-800 dark:text-slate-200 leading-tight line-clamp-2 md:line-clamp-none md:truncate min-w-[120px] max-w-[150px] md:min-w-[220px] md:max-w-[280px]" title="${iB ? iB.descOriginal : '-'}">${iB ? iB.descOriginal : '-'}</div>
+                        <div class="font-bold text-[10px] md:text-sm text-slate-800 dark:text-slate-200 leading-tight line-clamp-2 md:line-clamp-none md:truncate min-w-[120px] max-w-[150px] md:min-w-[220px] md:max-w-[280px]" title="${iB ? escapeHTML(iB.descOriginal) : '-'}">${iB ? escapeHTML(iB.descOriginal) : '-'}</div>
                     </td>
                     <td class="p-1 md:p-3 align-middle">${acB}</td>
                 `;
                 tbody.appendChild(tr);
-            });
-
-            document.getElementById('kpiTotal').innerText = cTotal;
-            document.getElementById('kpiOk').innerText = cOk; document.getElementById('kpiDiv').innerText = cDiv;
-            document.getElementById('kpiSobras').innerText = cSoA + cSoB;
-            document.getElementById('kpiSoA').innerText = cSoA; document.getElementById('kpiSoB').innerText = cSoB;
-            aplicarFiltro(filtroStatus);
+            }
         }
 
-        // Lógica de Filtro Refatorada
+        function carregarMaisItens() {
+            const inicio = paginaAtual * limiteExibicao;
+            paginaAtual++;
+            const fim = Math.min(dadosFiltradosMatriz.length, paginaAtual * limiteExibicao);
+            
+            renderizarPaginaMatriz(inicio, fim);
+            
+            const btnContainer = document.getElementById('btnCarregarMaisContainer');
+            if (dadosFiltradosMatriz.length > paginaAtual * limiteExibicao) {
+                btnContainer.classList.remove('hidden');
+            } else {
+                btnContainer.classList.add('hidden');
+            }
+        }
+
         function aplicarFiltro(tipo) {
             filtroStatus = tipo;
             document.querySelectorAll('.card-kpi').forEach(c => c.classList.remove('ring-2', 'ring-indigo-500', 'active', 'scale-105'));
             const card = document.getElementById(`card-${tipo}`); if(card) card.classList.add('ring-2', 'ring-indigo-500', 'active', 'scale-105');
             
-            document.querySelectorAll('#tbodyMatriz .row-item').forEach(l => { 
-                let status = l.getAttribute('data-status');
-                let show = (tipo === 'all') || (status === tipo) || (tipo === 'sobras' && (status === 'soa' || status === 'sob'));
-                // Retornando ao comportamento padrão de TR de tabela
-                l.style.display = show ? '' : 'none'; 
-            });
+            paginaAtual = 1; // Reseta paginação
+            renderizarMatriz(processedData.listaFinal, processedData.dictA, processedData.dictB);
         }
 
-        function debounceBusca() { clearTimeout(window.searchT); window.searchT = setTimeout(() => { filtroBusca = document.getElementById('inputBusca').value; renderizarMatriz(processedData.listaFinal, processedData.dictA, processedData.dictB); }, 300); }
+        function debounceBusca() { clearTimeout(window.searchT); window.searchT = setTimeout(() => { filtroBusca = document.getElementById('inputBusca').value; paginaAtual = 1; renderizarMatriz(processedData.listaFinal, processedData.dictA, processedData.dictB); }, 300); }
 
         function exportarExcelResultado() {
             let dadosExport = [["STATUS", "COD A", "PRODUTO A", "QTD A", "COD B", "PRODUTO B", "QTD B", "DIFERENÇA"]];
@@ -1121,10 +1208,8 @@ const palavrasExcluidasFixas = []; // vazio = nenhuma exclusão automática
                     let pad = classificarEExtrairDados(rows, idLado);
                     if (idLado === 'A') { 
                         dadosRawA = pad; 
-                        localStorage.setItem('dadosRawAV1', JSON.stringify(dadosRawA));
                     } else { 
                         dadosRawB = pad; 
-                        localStorage.setItem('dadosRawBV1', JSON.stringify(dadosRawB));
                     }
                     mostrarNotificacao("Sucesso", "Ficheiro lido: " + pad.length + " itens.");
                 } catch (err) { mostrarNotificacao("Erro", "Ficheiro corrompido ou formato inválido."); }
@@ -1189,8 +1274,8 @@ const palavrasExcluidasFixas = []; // vazio = nenhuma exclusão automática
                     <td class="p-3 text-xs font-bold text-slate-600 dark:text-slate-300">
                         <div class="flex flex-col gap-1">
                             <span class="text-slate-400 uppercase text-[9px] tracking-widest">Origem</span>
-                            <span>${o}</span>
-                            <span class="text-indigo-500 font-black">➔ ${dicionarioMescla[o]}</span>
+                            <span>${escapeHTML(o)}</span>
+                            <span class="text-indigo-500 font-black">➔ ${escapeHTML(dicionarioMescla[o])}</span>
                         </div>
                     </td>
                     <td class="p-3 text-right align-middle">
@@ -1204,7 +1289,18 @@ const palavrasExcluidasFixas = []; // vazio = nenhuma exclusão automática
                 tbody.appendChild(tr);
             });
         }
-        function renderizarListaExclusoes() { let tbA = document.getElementById('tbodyExcluidosA'); let tbB = document.getElementById('tbodyExcluidosB'); tbA.innerHTML = ''; tbB.innerHTML = ''; exclusoes.A.forEach(item => tbA.innerHTML += `<tr><td class="p-3 text-xs flex justify-between font-bold dark:text-slate-300">${item} <button onclick="restaurarExclusao('${esc(item)}', 'A')" class="text-indigo-500 font-black transition-colors">VOLTAR</button></td></tr>`); exclusoes.B.forEach(item => tbB.innerHTML += `<tr><td class="p-3 text-xs flex justify-between font-bold dark:text-slate-300">${item} <button onclick="restaurarExclusao('${esc(item)}', 'B')" class="text-indigo-500 font-black transition-colors">VOLTAR</button></td></tr>`); }
+        function renderizarListaExclusoes() {
+            let tbA = document.getElementById('tbodyExcluidosA');
+            let tbB = document.getElementById('tbodyExcluidosB');
+            tbA.innerHTML = '';
+            tbB.innerHTML = '';
+            exclusoes.A.forEach(item => {
+                tbA.innerHTML += `<tr><td class="p-3 text-xs flex justify-between font-bold dark:text-slate-300">${escapeHTML(item)} <button onclick="restaurarExclusao('${esc(item)}', 'A')" class="text-indigo-500 font-black transition-colors">VOLTAR</button></td></tr>`;
+            });
+            exclusoes.B.forEach(item => {
+                tbB.innerHTML += `<tr><td class="p-3 text-xs flex justify-between font-bold dark:text-slate-300">${escapeHTML(item)} <button onclick="restaurarExclusao('${esc(item)}', 'B')" class="text-indigo-500 font-black transition-colors">VOLTAR</button></td></tr>`;
+            });
+        }
         function removerMescla(o) {
             let origemReal = o;
 
@@ -1330,7 +1426,7 @@ const palavrasExcluidasFixas = []; // vazio = nenhuma exclusão automática
                     d.className = "bg-slate-50 dark:bg-slate-800 p-5 rounded-3xl flex justify-between items-center gap-4 border border-slate-100 dark:border-slate-700 transition-all duration-300";
                     d.innerHTML = `
                         <div class="text-xs font-bold leading-relaxed flex-1">
-                            Lado A: ${s.itemA}<br>Lado B: ${s.itemB}<br>
+                            Lado A: ${escapeHTML(s.itemA)}<br>Lado B: ${escapeHTML(s.itemB)}<br>
                             <span class="text-indigo-500 font-black text-[10px]">AFINIDADE: ${Math.round(s.sc*100)}%</span>
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
@@ -1398,15 +1494,7 @@ const palavrasExcluidasFixas = []; // vazio = nenhuma exclusão automática
         function fecharModalIA() { document.getElementById('aiModal').classList.add('hidden'); }
 
         // Notificar dados carregados da persistência
-        if (dadosRawA.length > 0 || dadosRawB.length > 0) {
-            setTimeout(() => {
-                let msg = "";
-                if (dadosRawA.length > 0 && dadosRawB.length > 0) msg = dadosRawA.length + " (A) + " + dadosRawB.length + " (B) itens carregados da memoria.";
-                else if (dadosRawA.length > 0) msg = dadosRawA.length + " itens do Lado A carregados da memoria.";
-                else if (dadosRawB.length > 0) msg = dadosRawB.length + " itens do Lado B carregados da memoria.";
-                mostrarNotificacao("Dados Recuperados", msg + " Clique em Processar Auditoria.");
-            }, 500);
-        }
+        // (Desativado: dados brutos agora ficam apenas na memória RAM para evitar QuotaExceededError)
     </script>
 </body>
 </html>
