@@ -38,6 +38,8 @@ function criarElemento() {
     click() {},
     focus() {},
     setAttribute() {},
+    addEventListener() {},
+    removeEventListener() {},
     querySelector() { return criarElemento(); }
   };
 }
