@@ -4,7 +4,7 @@
 
 ### Auditoria de estoque, conciliação inteligente e registro de tratativas diretamente no navegador
 
-![Versão](https://img.shields.io/badge/versão-10.2-4F46E5?style=flat-square)
+![Versão](https://img.shields.io/badge/versão-10.2%20%2B%20fluidez%2010.3-4F46E5?style=flat-square)
 ![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
 ![SheetJS](https://img.shields.io/badge/SheetJS-Excel-217346?style=flat-square&logo=microsoftexcel&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-Interface-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
@@ -18,7 +18,7 @@ O **Conciliador de Estoque PRO** foi criado para reduzir o trabalho manual de co
 
 A aplicação lê arquivos de estoque, normaliza descrições, consolida itens repetidos, cruza os dois lados, classifica diferenças e mantém uma memória local das decisões tomadas durante a auditoria.
 
-A versão **10.2** reforça principalmente três pontos: **confiabilidade do motor**, **fluidez no processamento** e **registro das tratativas diretamente no Status**.
+A versão **10.2** reforça principalmente três pontos: **confiabilidade do motor**, **fluidez no processamento** e **registro das tratativas diretamente no Status**. Sobre ela existe agora uma **camada de fluidez v10.3**, criada para melhorar a execução sem alterar as regras de conciliação nem o desenho da interface.
 
 ## O que mudou na v10.2
 
@@ -30,8 +30,22 @@ A versão **10.2** reforça principalmente três pontos: **confiabilidade do mot
 - **destaque discreto:** linhas com observação recebem indicação visual sem alterar o desenho da tabela;
 - **backup completo:** observações passam a fazer parte do backup JSON junto com uniões, exclusões e rejeições;
 - **Excel mais completo:** a exportação inclui uma coluna de observação;
-- **mais fluidez:** cache, indexação de candidatos, paginação e processamento em etapas reduzem trabalho desnecessário no navegador;
+- **indexação de candidatos:** o motor evita comparar produtos sem relação plausível;
 - **memória mais segura:** ciclos de união e reaprendizado de pares rejeitados são evitados.
+
+## Camada de fluidez v10.3
+
+A camada de performance mantém as mesmas regras do motor e atua somente na forma como o navegador executa o trabalho:
+
+- **Web Worker para normalização:** em bases maiores, parte do processamento pesado sai da thread da interface;
+- **fallback seguro:** se Worker não estiver disponível, o processamento continua em lotes menores, cedendo tempo ao navegador;
+- **cache de pré-processamento:** excluir, restaurar ou unir itens não obriga o sistema a normalizar novamente toda a base bruta;
+- **processamento cooperativo:** consolidação e preparação são divididas em etapas para evitar longos períodos de tela congelada;
+- **progresso no botão:** o próprio botão de auditoria informa etapas como normalização, índices, cruzamento e consolidação;
+- **cache da matriz:** filtros e pesquisas reutilizam a classificação já calculada enquanto os dados da auditoria não mudam;
+- **atualização pontual de observações:** salvar ou apagar uma observação atualiza apenas o Status daquela linha, sem reconstruir toda a tabela;
+- **DOM controlado:** a paginação progressiva existente continua limitando a quantidade inicial de linhas renderizadas;
+- **isolamento de pintura:** pequenas otimizações de renderização reduzem repinturas desnecessárias da tabela.
 
 ## Como o motor decide
 
@@ -91,6 +105,8 @@ Quando os lados A e B estão conciliados, a observação acompanha aquela concil
 - observações clicáveis no Status;
 - filtros, pesquisa e indicadores de auditoria;
 - paginação progressiva da tabela;
+- processamento em Web Worker quando suportado;
+- cache de pré-processamento e da matriz de resultados;
 - exportação para Excel;
 - exportação e importação de backup em JSON;
 - tema claro e escuro;
@@ -102,6 +118,7 @@ Quando os lados A e B estão conciliados, a observação acompanha aquela concil
 |---|---|
 | Interface | HTML5 + Tailwind CSS via CDN |
 | Motor | JavaScript ES6+ |
+| Performance | Web Worker, cache em memória e processamento cooperativo |
 | Planilhas | SheetJS (`xlsx`) |
 | Persistência | LocalStorage |
 | Correspondência | Normalização, regras logísticas, similaridade textual e memória local |
@@ -136,7 +153,7 @@ Para trocar de computador, navegador ou manter uma cópia segura da inteligênci
 
 ## Privacidade e requisitos
 
-As planilhas são processadas **no próprio navegador** e não precisam ser enviadas para um servidor da aplicação.
+As planilhas são processadas **no próprio navegador** e não precisam ser enviadas para um servidor da aplicação. O Web Worker da camada de fluidez também executa localmente no dispositivo.
 
 A interface e a biblioteca de planilhas são carregadas por CDN, portanto a primeira abertura depende de acesso aos recursos externos utilizados pelo projeto.
 
@@ -145,7 +162,7 @@ Use somente dados que você tenha autorização para processar e evite publicar 
 ## Escopo atual
 
 - Entradas suportadas: `.xlsx`, `.xls` e `.csv`;
-- PDF ainda não faz parte da versão 10.2;
+- PDF ainda não faz parte da versão atual;
 - a memória é local ao navegador, por isso o backup JSON é recomendado;
 - sugestões inteligentes devem ser revisadas quando houver dúvida operacional.
 
