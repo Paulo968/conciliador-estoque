@@ -135,7 +135,8 @@ for (const arquivo of [
   'src/engine-2.js',
   'src/engine-3.js',
   'src/engine-4.js',
-  'src/memory-integrity-v104.js'
+  'src/memory-integrity-v104.js',
+  'src/architecture-v105.js'
 ]) {
   carregarArquivo(contexto, arquivo);
 }
@@ -213,6 +214,107 @@ teste('detector de integridade reconhece ciclo real sem alterar o dicionário', 
   assert.equal(executar(contexto, 'ConciliadorMemoria.contarCiclos({ A: "B", B: "A" })'), 1);
   const original = JSON.parse(executar(contexto, 'JSON.stringify(ConciliadorMemoria.higienizarDicionario({ A: "B", B: "A" }).dicionario)'));
   assert.deepEqual(original, { A: 'B', B: 'A' });
+});
+
+teste('A×A consolida vários códigos sem perder quantidade', async () => {
+  executar(contexto, `
+    dicionarioMescla = { "CALARIS 5LT": "CALARIS 5LT" };
+    exclusoes = { A: [], B: [] };
+  `);
+  const resultado = JSON.parse(await executar(contexto, `(async () => JSON.stringify(
+    await ConciliadorArquitetura.consolidarLadoReferencia([
+      { codigo: "A100", descOriginal: "CALARIS 5LT", um: "LT", qtdRaw: "10,500" },
+      { codigo: "A200", descOriginal: "CALARIS 5LT", um: "LT", qtdRaw: "4,250" }
+    ], "A", { cooperativo: false })
+  ))()`));
+
+  assert.equal(resultado.totalGrupos, 1);
+  assert.equal(resultado.totalGruposMulticodigo, 1);
+  assert.equal(resultado.grupos['CALARIS 5LT'].quantidade, 14.75);
+  assert.deepEqual(resultado.grupos['CALARIS 5LT'].codigos, ['A100', 'A200']);
+});
+
+teste('B×B consolida vários códigos e A×B compara os consolidados', async () => {
+  executar(contexto, `
+    dicionarioMescla = {
+      "CALARIS 5LT": "CALARIS 5LT",
+      "CALARIS 05LT": "CALARIS 5LT"
+    };
+    exclusoes = { A: [], B: [] };
+  `);
+
+  const resultado = JSON.parse(await executar(contexto, `(async () => {
+    const a = await ConciliadorArquitetura.consolidarLadoReferencia([
+      { codigo: "A100", descOriginal: "CALARIS 5LT", um: "LT", qtdRaw: "10,500" },
+      { codigo: "A200", descOriginal: "CALARIS 5LT", um: "LT", qtdRaw: "4,250" }
+    ], "A", { cooperativo: false });
+    const b = await ConciliadorArquitetura.consolidarLadoReferencia([
+      { codigo: "B010", descOriginal: "CALARIS 05LT", um: "LT", qtdRaw: "12,750" },
+      { codigo: "B020", descOriginal: "CALARIS 05LT", um: "LT", qtdRaw: "2,000" }
+    ], "B", { cooperativo: false });
+    return JSON.stringify({ a, b, cruzamento: ConciliadorArquitetura.conciliarConsolidados(a, b) });
+  })()`));
+
+  assert.equal(resultado.a.grupos['CALARIS 5LT'].quantidade, 14.75);
+  assert.equal(resultado.b.grupos['CALARIS 5LT'].quantidade, 14.75);
+  assert.equal(resultado.b.totalGruposMulticodigo, 1);
+  assert.equal(resultado.cruzamento.contadores.total, 1);
+  assert.equal(resultado.cruzamento.contadores.ok, 1);
+  assert.equal(resultado.cruzamento.statusPorChave['CALARIS 5LT'], 'ok');
+});
+
+teste('arquitetura espelho reproduz o mesmo resultado do motor', async () => {
+  const validacao = JSON.parse(await executar(contexto, `(async () => {
+    dicionarioMescla = {
+      "CALARIS 5LT": "CALARIS 5LT",
+      "CALARIS 05LT": "CALARIS 5LT"
+    };
+    exclusoes = { A: [], B: [] };
+    dadosRawA = [
+      { codigo: "A100", descOriginal: "CALARIS 5LT", um: "LT", qtdRaw: "10,500" },
+      { codigo: "A200", descOriginal: "CALARIS 5LT", um: "LT", qtdRaw: "4,250" }
+    ];
+    dadosRawB = [
+      { codigo: "B010", descOriginal: "CALARIS 05LT", um: "LT", qtdRaw: "12,750" },
+      { codigo: "B020", descOriginal: "CALARIS 05LT", um: "LT", qtdRaw: "2,000" }
+    ];
+    const dictA = estruturarLado(dadosRawA, 'A');
+    const dictB = estruturarLado(dadosRawB, 'B');
+    processedData = {
+      dictA,
+      dictB,
+      listaFinal: Array.from(new Set([...Object.keys(dictA), ...Object.keys(dictB)])).sort()
+    };
+    return JSON.stringify(await ConciliadorArquitetura.validarAgora());
+  })()`));
+
+  assert.equal(validacao.ok, true);
+  assert.equal(validacao.conservacao.ladoA.totalDiferencas, 0);
+  assert.equal(validacao.conservacao.ladoB.totalDiferencas, 0);
+  assert.equal(validacao.conservacao.cruzamento.totalDiferencas, 0);
+  assert.equal(validacao.consolidacaoA.gruposMulticodigo, 1);
+  assert.equal(validacao.consolidacaoB.gruposMulticodigo, 1);
+});
+
+teste('validação estrutural acusa quantidade perdida em vez de escondê-la', async () => {
+  const resultado = JSON.parse(await executar(contexto, `(async () => {
+    dicionarioMescla = { "PRODUTO X": "PRODUTO X" };
+    exclusoes = { A: [], B: [] };
+    const referencia = await ConciliadorArquitetura.consolidarLadoReferencia([
+      { codigo: "1", descOriginal: "PRODUTO X", um: "UN", qtdRaw: 10 },
+      { codigo: "2", descOriginal: "PRODUTO X", um: "UN", qtdRaw: 5 }
+    ], "A", { cooperativo: false });
+    return JSON.stringify(ConciliadorArquitetura.compararLadoComMotor(
+      referencia,
+      { "PRODUTO X": { qtd: 14 } }
+    ));
+  })()`));
+
+  assert.equal(resultado.ok, false);
+  assert.equal(resultado.totalDiferencas, 1);
+  assert.equal(resultado.diferencas[0].tipo, 'quantidade');
+  assert.equal(resultado.diferencas[0].referencia, 15);
+  assert.equal(resultado.diferencas[0].motor, 14);
 });
 
 let falhas = 0;
