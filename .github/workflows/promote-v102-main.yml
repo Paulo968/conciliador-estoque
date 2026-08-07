@@ -1,20 +1,22 @@
 name: Finalize Conciliador v10.2
 
 on:
-  push:
-    branches: [main]
-    paths: ['.github/workflows/promote-v102-main.yml']
+  issues:
+    types: [opened]
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   finalize:
+    if: github.event.issue.title == 'release-v10.2-trigger'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main with history
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
 
       - name: Fetch tested payload and verify
@@ -38,3 +40,8 @@ jobs:
           git add index.html
           git commit -m 'release: promove conciliador v10.2'
           git push origin main
+
+      - name: Close trigger issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue close "${{ github.event.issue.number }}" --comment 'v10.2 publicada na main.'
