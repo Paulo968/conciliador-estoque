@@ -1,0 +1,136 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
+
+html,
+body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding-bottom: 0;
+}
+
+/* TRANSIÇÃO SUAVE DE TEMA GLOBAL OTIMIZADA */
+html.theme-transition,
+html.theme-transition * {
+    transition-property: background-color, border-color, color, fill, stroke !important;
+    transition-duration: 250ms !important;
+    transition-timing-function: ease-in-out !important;
+}
+
+/* ARQUITETURA DE TABELA RESPONSIVA FLUIDA */
+.table-container {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 1rem;
+    border: 1px solid #e2e8f0;
+}
+
+.dark .table-container { border-color: #1e293b; }
+
+th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(12px);
+    white-space: nowrap;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    transition: all 0.3s;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.badge-ok { background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+.badge-sobra { background-color: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+.badge-falta { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.dark .badge-ok { background-color: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+.dark .badge-sobra { background-color: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+.dark .badge-falta { background-color: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+/* O Status continua com o mesmo visual, mas agora aceita observações */
+.status-clicavel {
+    position: relative;
+    width: 100%;
+    min-height: 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.8rem;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, background-color 0.2s ease;
+}
+.status-clicavel:hover { background: rgba(99, 102, 241, 0.06); }
+.status-com-observacao { box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.55), 0 0 12px rgba(245, 158, 11, 0.16); }
+.status-com-observacao::after {
+    content: '';
+    position: absolute;
+    top: 0.28rem;
+    right: 0.35rem;
+    width: 0.48rem;
+    height: 0.48rem;
+    border-radius: 9999px;
+    background: #f59e0b;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.9);
+}
+.dark .status-clicavel:hover { background: rgba(129, 140, 248, 0.09); }
+
+.btn-acao {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem;
+    transition: all 0.2s;
+    cursor: pointer;
+    border: 1px solid #e2e8f0;
+}
+.dark .btn-acao { border-color: #334155; color: #94a3b8; }
+.btn-acao:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+
+.linha-selecionada {
+    background-color: #e0e7ff !important;
+    border: 2px solid #6366f1 !important;
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.3) !important;
+    transition: all 0.3s ease;
+}
+.dark .linha-selecionada { background-color: #312e81 !important; border-color: #818cf8 !important; }
+
+.card-kpi {
+    cursor: pointer;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid transparent;
+}
+.card-kpi:hover { transform: translateY(-4px); border-color: #cbd5e1; }
+.card-kpi.active { transform: scale(1.05); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); border-color: #6366f1; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.dark ::-webkit-scrollbar-thumb { background: #475569; }
+
+@media (max-width: 640px) {
+    .card-kpi {
+        box-shadow: none !important;
+        border-width: 1px !important;
+        border-color: #e2e8f0 !important;
+    }
+    .dark .card-kpi { border-color: #334155 !important; }
+    #areaTabela .grid { grid-template-columns: 1fr 1fr !important; }
+    .file-upload-container { padding: 1rem !important; }
+    header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+    }
+}
