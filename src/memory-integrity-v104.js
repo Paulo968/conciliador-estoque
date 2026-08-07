@@ -1,5 +1,5 @@
-// Conciliador PRO v10.4 — higiene segura da memória e versionamento do backup
-// Esta camada NÃO altera regras de correspondência do motor.
+// Conciliador PRO v10.4 — integridade conservadora da memória e versionamento do backup
+// Esta camada NÃO altera regras de correspondência do motor e NÃO remove A -> A.
 (() => {
     'use strict';
 
@@ -7,8 +7,8 @@
 
     function higienizarDicionario(origem) {
         const entrada = origem && typeof origem === 'object' && !Array.isArray(origem) ? origem : {};
-        const limpo = {};
-        let autoapontamentosRemovidos = 0;
+        const preservado = {};
+        let autoapontamentosPreservados = 0;
         let entradasInvalidasRemovidas = 0;
 
         Object.entries(entrada).forEach(([chave, destino]) => {
@@ -17,21 +17,19 @@
                 return;
             }
 
-            // A -> A não muda o resultado de aplicarDicionario e só ocupa memória.
-            if (chave === destino) {
-                autoapontamentosRemovidos++;
-                return;
-            }
+            // A -> A pode representar uma decisão/marca operacional válida no histórico.
+            // Portanto é contado para diagnóstico, mas NUNCA removido automaticamente.
+            if (chave === destino) autoapontamentosPreservados++;
 
-            limpo[chave] = destino;
+            preservado[chave] = destino;
         });
 
         return {
-            dicionario: limpo,
-            autoapontamentosRemovidos,
+            dicionario: preservado,
+            autoapontamentosPreservados,
             entradasInvalidasRemovidas,
             totalAntes: Object.keys(entrada).length,
-            totalDepois: Object.keys(limpo).length
+            totalDepois: Object.keys(preservado).length
         };
     }
 
@@ -47,11 +45,15 @@
             let atual = inicio;
 
             while (atual && dicionario[atual] && !finalizados.has(atual)) {
+                // Autoapontamento é tratado como terminal válido, não como ciclo problemático.
+                if (dicionario[atual] === atual) {
+                    caminho.push(atual);
+                    break;
+                }
+
                 if (posicoes.has(atual)) {
                     const ciclo = caminho.slice(posicoes.get(atual));
-                    if (ciclo.length > 1) {
-                        ciclos.add([...ciclo].sort().join('\u0000'));
-                    }
+                    if (ciclo.length > 1) ciclos.add([...ciclo].sort().join('\u0000'));
                     break;
                 }
 
@@ -78,7 +80,8 @@
     function higienizarMemoriaAtual() {
         const resultado = higienizarDicionario(dicionarioMescla);
 
-        if (resultado.autoapontamentosRemovidos || resultado.entradasInvalidasRemovidas) {
+        // Só elimina entradas tecnicamente inválidas; nunca elimina A -> A nem A -> B.
+        if (resultado.entradasInvalidasRemovidas) {
             dicionarioMescla = resultado.dicionario;
             localStorage.setItem('dicMesclaV6', JSON.stringify(dicionarioMescla));
         }
@@ -89,8 +92,8 @@
     function relatorioIntegridade() {
         const higiene = higienizarDicionario(dicionarioMescla);
         return {
-            mesclasReais: Object.keys(higiene.dicionario).length,
-            autoapontamentos: higiene.autoapontamentosRemovidos,
+            entradasDicionario: Object.keys(higiene.dicionario).length,
+            autoapontamentosPreservados: higiene.autoapontamentosPreservados,
             entradasInvalidas: higiene.entradasInvalidasRemovidas,
             ciclosDetectados: contarCiclos(higiene.dicionario),
             exclusoesA: Array.isArray(exclusoes?.A) ? exclusoes.A.length : 0,
@@ -110,7 +113,7 @@
         setTimeout(() => URL.revokeObjectURL(url), 0);
     }
 
-    // Substitui apenas a camada de exportação. Nenhuma regra do motor é tocada.
+    // Substitui apenas a camada de exportação. Nenhuma regra/memória válida do motor é tocada.
     window.exportarBackup = function () {
         const higiene = higienizarMemoriaAtual();
         const integridade = relatorioIntegridade();
@@ -125,15 +128,14 @@
             familias: JSON.parse(localStorage.getItem('familiasV1') || '{}'),
             integridade: {
                 ...integridade,
-                redundanciasRemovidasNestaExportacao:
-                    higiene.autoapontamentosRemovidos + higiene.entradasInvalidasRemovidas
+                entradasInvalidasRemovidasNestaExportacao: higiene.entradasInvalidasRemovidas
             }
         };
 
         baixarJSON(backup, 'Inteligencia_Auditoria_PRO_Backup.json');
     };
 
-    // Importa backups antigos e novos. Só remove redundâncias sem efeito operacional.
+    // Importa backups antigos e novos preservando integralmente A -> A e A -> B.
     window.processarImportacaoBackup = function (event) {
         const file = event?.target?.files?.[0];
         if (!file) return;
@@ -161,12 +163,11 @@
                     localStorage.setItem('familiasV1', JSON.stringify(dados.familias));
                 }
 
-                const removidos = higiene.autoapontamentosRemovidos + higiene.entradasInvalidasRemovidas;
                 mostrarNotificacao(
                     'Backup importado',
-                    removidos
-                        ? `Memória restaurada com sucesso. ${removidos} redundância${removidos === 1 ? '' : 's'} sem efeito foram removidas.`
-                        : 'Memória restaurada com sucesso.'
+                    higiene.entradasInvalidasRemovidas
+                        ? `Memória restaurada. ${higiene.entradasInvalidasRemovidas} entrada${higiene.entradasInvalidasRemovidas === 1 ? '' : 's'} tecnicamente inválida${higiene.entradasInvalidasRemovidas === 1 ? '' : 's'} foi/foram descartada${higiene.entradasInvalidasRemovidas === 1 ? '' : 's'}.`
+                        : 'Memória restaurada integralmente com sucesso.'
                 );
                 setTimeout(() => location.reload(), 800);
             } catch (erro) {
@@ -178,13 +179,11 @@
         reader.readAsText(file);
     };
 
-    // Faz a limpeza segura uma vez ao carregar a aplicação.
+    // Diagnóstico conservador ao carregar: A -> A permanece intacto.
     const higieneInicial = higienizarMemoriaAtual();
-    if (higieneInicial.autoapontamentosRemovidos || higieneInicial.entradasInvalidasRemovidas) {
-        console.info(
-            `[Conciliador PRO] Memória higienizada: ${higieneInicial.autoapontamentosRemovidos} autoapontamentos e ${higieneInicial.entradasInvalidasRemovidas} entradas inválidas removidas.`
-        );
-    }
+    console.info(
+        `[Conciliador PRO] Integridade: ${higieneInicial.autoapontamentosPreservados} autoapontamento(s) preservado(s), ${higieneInicial.entradasInvalidasRemovidas} entrada(s) inválida(s) removida(s).`
+    );
 
     window.ConciliadorMemoria = Object.freeze({
         versaoBackup: BACKUP_VERSION,
