@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conciliador de Estoque PRO v10.4</title>
+    <title>Conciliador de Estoque PRO v10.5</title>
 
     <script>
         if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -32,7 +32,7 @@
     <script src="./src/engine-3.js"></script>
     <script src="./src/engine-4.js"></script>
 
-    <!-- Integridade da memória v10.4: remove apenas redundâncias sem efeito -->
+    <!-- Integridade conservadora da memória: A→A e A→B permanecem intactos -->
     <script src="./src/memory-integrity-v104.js"></script>
 
     <!-- Complemento da Lixeira: rolagem e contadores -->
@@ -40,6 +40,9 @@
 
     <!-- Camada de fluidez v10.3: Worker, cache e processamento cooperativo -->
     <script src="./src/performance-v103.js"></script>
+
+    <!-- Arquitetura v10.5: A×A → B×B → A×B + validação de conservação -->
+    <script src="./src/architecture-v105.js"></script>
 
     <!-- Tema v10.4: troca atômica, sem animação global pesada -->
     <script src="./src/theme-v104.js"></script>
