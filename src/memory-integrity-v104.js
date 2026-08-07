@@ -1,9 +1,9 @@
-// Conciliador PRO v10.4 — integridade conservadora da memória e versionamento do backup
+// Conciliador PRO v10.5 — integridade conservadora da memória e versionamento do backup
 // Esta camada NÃO altera regras de correspondência do motor e NÃO remove A -> A.
 (() => {
     'use strict';
 
-    const BACKUP_VERSION = '10.4-motor-confiavel-performance-theme';
+    const BACKUP_VERSION = '10.5-arquitetura-auditavel';
 
     function higienizarDicionario(origem) {
         const entrada = origem && typeof origem === 'object' && !Array.isArray(origem) ? origem : {};
@@ -129,7 +129,9 @@
             integridade: {
                 ...integridade,
                 entradasInvalidasRemovidasNestaExportacao: higiene.entradasInvalidasRemovidas
-            }
+            },
+            // A arquitetura v10.5 é carregada depois desta camada, mas na hora do clique já está disponível.
+            arquitetura: window.ConciliadorArquitetura?.obterResumoBackup?.() || null
         };
 
         baixarJSON(backup, 'Inteligencia_Auditoria_PRO_Backup.json');
