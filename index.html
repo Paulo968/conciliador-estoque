@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conciliador de Estoque PRO v10.2</title>
+    <title>Conciliador de Estoque PRO v10.4</title>
 
     <script>
         if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -37,5 +37,8 @@
 
     <!-- Camada de fluidez v10.3: Worker, cache e processamento cooperativo -->
     <script src="./src/performance-v103.js"></script>
+
+    <!-- Tema v10.4: troca atômica, sem animação global pesada -->
+    <script src="./src/theme-v104.js"></script>
 </body>
 </html>
