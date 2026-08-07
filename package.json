@@ -1,0 +1,9 @@
+{
+  "name": "conciliador-estoque-pro",
+  "version": "10.4.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/engine-regression.mjs"
+  }
+}
