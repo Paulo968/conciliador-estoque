@@ -130,7 +130,6 @@ function executar(contexto, expressao) {
 const sandbox = criarSandbox();
 const contexto = vm.createContext(sandbox);
 
-// Carrega os próprios arquivos usados pela aplicação, na mesma ordem essencial do navegador.
 for (const arquivo of [
   'src/engine-1.js',
   'src/engine-2.js',
@@ -185,7 +184,7 @@ teste('mesma quantidade é evidência, não autorização automática', () => {
   assert.notEqual(resultado.nivel, 'automatico');
 });
 
-teste('higiene remove somente A -> A e mantém A -> B', () => {
+teste('integridade preserva A -> A e A -> B; remove apenas entrada inválida', () => {
   const resultado = JSON.parse(executar(contexto, `JSON.stringify(
     ConciliadorMemoria.higienizarDicionario({
       "A": "A",
@@ -193,17 +192,24 @@ teste('higiene remove somente A -> A e mantém A -> B', () => {
       "D": ""
     })
   )`));
-  assert.deepEqual(resultado.dicionario, { B: 'C' });
-  assert.equal(resultado.autoapontamentosRemovidos, 1);
+  assert.deepEqual(resultado.dicionario, { A: 'A', B: 'C' });
+  assert.equal(resultado.autoapontamentosPreservados, 1);
   assert.equal(resultado.entradasInvalidasRemovidas, 1);
 });
 
-teste('higiene inicial preserva a união real existente no localStorage', () => {
+teste('integridade inicial preserva autoapontamento e união real do localStorage', () => {
   const dicionario = JSON.parse(executar(contexto, 'JSON.stringify(dicionarioMescla)'));
-  assert.deepEqual(dicionario, { 'ORIGEM REAL': 'DESTINO REAL' });
+  assert.deepEqual(dicionario, {
+    'CANONICO': 'CANONICO',
+    'ORIGEM REAL': 'DESTINO REAL'
+  });
 });
 
-teste('detector de integridade reconhece ciclo sem alterar o dicionário', () => {
+teste('autoapontamento não é contado como ciclo problemático', () => {
+  assert.equal(executar(contexto, 'ConciliadorMemoria.contarCiclos({ A: "A" })'), 0);
+});
+
+teste('detector de integridade reconhece ciclo real sem alterar o dicionário', () => {
   assert.equal(executar(contexto, 'ConciliadorMemoria.contarCiclos({ A: "B", B: "A" })'), 1);
   const original = JSON.parse(executar(contexto, 'JSON.stringify(ConciliadorMemoria.higienizarDicionario({ A: "B", B: "A" }).dicionario)'));
   assert.deepEqual(original, { A: 'B', B: 'A' });
