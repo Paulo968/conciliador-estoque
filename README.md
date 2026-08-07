@@ -4,11 +4,12 @@
 
 ### Auditoria de estoque, conciliação inteligente e registro de tratativas diretamente no navegador
 
-![Versão](https://img.shields.io/badge/versão-10.2%20%2B%20fluidez%2010.3-4F46E5?style=flat-square)
+![Versão](https://img.shields.io/badge/versão-10.4-4F46E5?style=flat-square)
 ![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
 ![SheetJS](https://img.shields.io/badge/SheetJS-Excel-217346?style=flat-square&logo=microsoftexcel&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-Interface-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
 ![Privacidade](https://img.shields.io/badge/Processamento-Local-16A34A?style=flat-square)
+![Regressão](https://img.shields.io/badge/Testes-automáticos-0F766E?style=flat-square)
 
 </div>
 
@@ -18,9 +19,9 @@ O **Conciliador de Estoque PRO** foi criado para reduzir o trabalho manual de co
 
 A aplicação lê arquivos de estoque, normaliza descrições, consolida itens repetidos, cruza os dois lados, classifica diferenças e mantém uma memória local das decisões tomadas durante a auditoria.
 
-A versão **10.2** reforça principalmente três pontos: **confiabilidade do motor**, **fluidez no processamento** e **registro das tratativas diretamente no Status**. Sobre ela existe agora uma **camada de fluidez v10.3**, criada para melhorar a execução sem alterar as regras de conciliação nem o desenho da interface.
+O núcleo de conciliação continua baseado no **motor confiável v10.2**. Sobre ele existem camadas independentes de **fluidez**, **integridade da memória** e **tema**, criadas para evoluir a aplicação sem alterar silenciosamente as regras que decidem quando dois produtos podem ou não ser conciliados.
 
-## O que mudou na v10.2
+## Motor confiável v10.2
 
 - **Motor mais conservador:** quantidade igual deixou de ser motivo suficiente para união automática;
 - **níveis de decisão:** correspondências de alta confiança podem ser unidas automaticamente, casos intermediários viram sugestões e conflitos permanecem separados;
@@ -28,7 +29,7 @@ A versão **10.2** reforça principalmente três pontos: **confiabilidade do mot
 - **quantidades decimais preservadas:** o motor trata valores fracionados de estoque e usa tolerância técnica para comparação;
 - **observações no Status:** clique no Status de qualquer linha para registrar, editar ou apagar uma tratativa;
 - **destaque discreto:** linhas com observação recebem indicação visual sem alterar o desenho da tabela;
-- **backup completo:** observações passam a fazer parte do backup JSON junto com uniões, exclusões e rejeições;
+- **backup completo:** observações fazem parte do backup JSON junto com uniões, exclusões e rejeições;
 - **Excel mais completo:** a exportação inclui uma coluna de observação;
 - **indexação de candidatos:** o motor evita comparar produtos sem relação plausível;
 - **memória mais segura:** ciclos de união e reaprendizado de pares rejeitados são evitados.
@@ -47,6 +48,41 @@ A camada de performance mantém as mesmas regras do motor e atua somente na form
 - **DOM controlado:** a paginação progressiva existente continua limitando a quantidade inicial de linhas renderizadas;
 - **isolamento de pintura:** pequenas otimizações de renderização reduzem repinturas desnecessárias da tabela.
 
+## Integridade da memória v10.4
+
+A camada de integridade foi separada do motor de correspondência para que a manutenção da memória não altere as regras da auditoria.
+
+Ela remove automaticamente apenas registros sem efeito operacional, como `PRODUTO A → PRODUTO A`, preservando uniões reais `A → B`, rejeições da IA, exclusões manuais, observações e famílias aprendidas.
+
+Backups antigos continuam compatíveis. Na importação e exportação, a estrutura é higienizada com regras conservadoras e o backup passa a registrar a versão atual e um pequeno relatório de integridade.
+
+O sistema também consegue detectar ciclos no dicionário para diagnóstico, mas **não apaga automaticamente uma cadeia real apenas por considerá-la suspeita**.
+
+## Proteção por testes de regressão
+
+O projeto possui uma suíte sem dependências externas que carrega os próprios arquivos do motor e valida comportamentos críticos, entre eles:
+
+- preservação de quantidades decimais;
+- equivalência entre formatos `12,750` e `12.750`;
+- manutenção de diferenças reais de quantidade;
+- bloqueio de variantes como `1LT × 5LT`;
+- garantia de que quantidade igual é apenas evidência e não autorização automática;
+- remoção somente de autoapontamentos redundantes da memória;
+- preservação de uniões reais;
+- detecção de ciclos sem alteração automática do dicionário.
+
+Para executar localmente:
+
+```bash
+npm test
+```
+
+O workflow **Regressão do Conciliador** também executa esses testes automaticamente em pushes para `main` e em pull requests.
+
+## Tema v10.4
+
+A troca entre claro e escuro foi otimizada para evitar repintura simultânea de centenas de elementos. O tema claro usa superfícies suaves em tons de slate, azul e índigo, mantendo a mesma estrutura da interface sem o excesso de branco puro.
+
 ## Como o motor decide
 
 | Nível | Comportamento | Objetivo |
@@ -55,7 +91,7 @@ A camada de performance mantém as mesmas regras do motor e atua somente na form
 | **Sugestão** | Aparece em **Sugestões Inteligentes** para revisão do usuário | Aproveitar semelhanças úteis mantendo controle humano |
 | **Conflito ou dúvida** | Mantém os itens separados | Evitar que uma falsa união esconda uma divergência real |
 
-Na v10.2, **mesma quantidade é apenas uma evidência adicional**. Ela não autoriza uma união sozinha.
+**Mesma quantidade é apenas uma evidência adicional. Ela não autoriza uma união sozinha.**
 
 ## Fluxo da auditoria
 
@@ -107,10 +143,12 @@ Quando os lados A e B estão conciliados, a observação acompanha aquela concil
 - paginação progressiva da tabela;
 - processamento em Web Worker quando suportado;
 - cache de pré-processamento e da matriz de resultados;
+- higiene conservadora da memória;
 - exportação para Excel;
 - exportação e importação de backup em JSON;
 - tema claro e escuro;
-- interface responsiva para desktop e celular.
+- interface responsiva para desktop e celular;
+- testes automáticos de regressão.
 
 ## Tecnologias
 
@@ -122,6 +160,7 @@ Quando os lados A e B estão conciliados, a observação acompanha aquela concil
 | Planilhas | SheetJS (`xlsx`) |
 | Persistência | LocalStorage |
 | Correspondência | Normalização, regras logísticas, similaridade textual e memória local |
+| Qualidade | Node.js `assert` + `vm` e GitHub Actions |
 
 ## Como executar
 
@@ -132,7 +171,7 @@ cd conciliador-estoque
 
 Depois, abra o arquivo `index.html` no navegador.
 
-Não é necessário instalar servidor, banco de dados ou backend para processar os estoques.
+Não é necessário instalar servidor, banco de dados ou backend para processar os estoques. Node.js só é necessário caso você queira executar os testes de regressão com `npm test`.
 
 ## Fluxo de uso
 
@@ -150,6 +189,8 @@ Não é necessário instalar servidor, banco de dados ou backend para processar 
 A memória do conciliador fica armazenada no navegador com **LocalStorage**. Isso mantém uniões, exclusões, rejeições e observações disponíveis nos próximos usos naquele navegador.
 
 Para trocar de computador, navegador ou manter uma cópia segura da inteligência construída durante as auditorias, use **Memória → Exportar .JSON** e depois **Importar .JSON** quando necessário.
+
+A higiene da memória remove somente redundâncias sem efeito prático. Uma união real entre nomes diferentes continua preservada.
 
 ## Privacidade e requisitos
 
