@@ -11,6 +11,8 @@
 ![Privacidade](https://img.shields.io/badge/Processamento-Local-16A34A?style=flat-square)
 ![Regressão](https://img.shields.io/badge/Testes-automáticos-0F766E?style=flat-square)
 
+### 🚀 [Acessar o Conciliador PRO](https://conciliador-pro-yr1yl5.v2.appdeploy.ai/)
+
 </div>
 
 ## Visão geral
