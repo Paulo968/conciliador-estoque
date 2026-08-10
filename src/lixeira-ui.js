@@ -1,4 +1,4 @@
-// Lixeira v10.2.1 — rolagem independente + contadores de exclusões manuais
+// Memória v10.6 — rolagem da lixeira + contadores de exclusões e produtos ligados
 (() => {
     function obterExclusoes() {
         if (typeof exclusoes === 'undefined' || !exclusoes) return { A: [], B: [] };
@@ -6,6 +6,45 @@
             A: Array.isArray(exclusoes.A) ? exclusoes.A : [],
             B: Array.isArray(exclusoes.B) ? exclusoes.B : []
         };
+    }
+
+    function obterResumoLigacoes() {
+        const dicionario = typeof dicionarioMescla !== 'undefined' && dicionarioMescla && typeof dicionarioMescla === 'object'
+            ? dicionarioMescla
+            : {};
+        const produtos = new Set();
+        let ligacoes = 0;
+
+        Object.entries(dicionario).forEach(([origem, destino]) => {
+            if (typeof origem !== 'string' || !origem.trim()) return;
+            if (typeof destino !== 'string' || !destino.trim()) return;
+
+            ligacoes++;
+            produtos.add(origem.trim());
+            produtos.add(destino.trim());
+        });
+
+        return { produtos: produtos.size, ligacoes };
+    }
+
+    function prepararContadorLigacoes() {
+        const aba = document.getElementById('abaMesclas');
+        if (!aba) return;
+
+        if (!document.getElementById('contadorLigacoesTotal')) {
+            aba.innerHTML = `Uniões Ativas <span id="contadorLigacoesTotal" class="ml-1 inline-flex min-w-6 h-6 px-1.5 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-[10px] font-black">0</span>`;
+        }
+    }
+
+    function atualizarContadorLigacoes() {
+        prepararContadorLigacoes();
+        const resumo = obterResumoLigacoes();
+        const contador = document.getElementById('contadorLigacoesTotal');
+        if (!contador) return;
+
+        contador.textContent = String(resumo.produtos);
+        contador.title = `${resumo.produtos} produto${resumo.produtos === 1 ? '' : 's'} envolvido${resumo.produtos === 1 ? '' : 's'} em ${resumo.ligacoes} ligação${resumo.ligacoes === 1 ? '' : 'ões'} ativa${resumo.ligacoes === 1 ? '' : 's'}`;
+        contador.setAttribute('aria-label', contador.title);
     }
 
     function prepararLixeira() {
@@ -70,12 +109,21 @@
         preencherEstadoVazio('tbodyExcluidosB', totalB === 0);
     }
 
-    // Complementa a renderização existente sem alterar a regra de exclusão do motor.
+    // Complementa a renderização existente sem alterar as regras do motor.
     if (typeof window.renderizarListaExclusoes === 'function') {
         const renderizarOriginal = window.renderizarListaExclusoes;
         window.renderizarListaExclusoes = function (...args) {
             const retorno = renderizarOriginal.apply(this, args);
             atualizarContadoresLixeira();
+            return retorno;
+        };
+    }
+
+    if (typeof window.renderizarRegrasMescla === 'function') {
+        const renderizarMesclasOriginal = window.renderizarRegrasMescla;
+        window.renderizarRegrasMescla = function (...args) {
+            const retorno = renderizarMesclasOriginal.apply(this, args);
+            atualizarContadorLigacoes();
             return retorno;
         };
     }
@@ -114,7 +162,10 @@
     `;
     document.head.appendChild(style);
 
+    prepararContadorLigacoes();
     prepararLixeira();
+    atualizarContadorLigacoes();
     atualizarContadoresLixeira();
+    window.atualizarContadorLigacoes = atualizarContadorLigacoes;
     window.atualizarContadoresLixeira = atualizarContadoresLixeira;
 })();
