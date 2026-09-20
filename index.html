@@ -19,18 +19,14 @@
     <link rel="stylesheet" href="./src/styles.css">
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-    <!-- Interface v10.2 -->
-    <script src="./src/ui-1.js"></script>
-    <script src="./src/ui-2.js"></script>
-    <script src="./src/ui-3.js"></script>
-    <script src="./src/ui-4.js"></script>
-    <script src="./src/ui-5.js"></script>
+    <!-- Interface principal -->
+    <script src="./src/app-ui.js"></script>
 
-    <!-- Motor v10.2: regras de conciliação preservadas -->
-    <script src="./src/engine-1.js"></script>
-    <script src="./src/engine-2.js"></script>
-    <script src="./src/engine-3.js"></script>
-    <script src="./src/engine-4.js"></script>
+    <!-- Motor v10.2 organizado por responsabilidade -->
+    <script src="./src/matching-core.js"></script>
+    <script src="./src/audit-pipeline.js"></script>
+    <script src="./src/results-and-files.js"></script>
+    <script src="./src/memory-and-suggestions.js"></script>
 
     <!-- Integridade conservadora da memória: A→A e A→B permanecem intactos -->
     <script src="./src/memory-integrity-v104.js"></script>
