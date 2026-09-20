@@ -131,10 +131,10 @@ const sandbox = criarSandbox();
 const contexto = vm.createContext(sandbox);
 
 for (const arquivo of [
-  'src/engine-1.js',
-  'src/engine-2.js',
-  'src/engine-3.js',
-  'src/engine-4.js',
+  'src/matching-core.js',
+  'src/audit-pipeline.js',
+  'src/results-and-files.js',
+  'src/memory-and-suggestions.js',
   'src/memory-integrity-v104.js',
   'src/architecture-v105.js'
 ]) {
